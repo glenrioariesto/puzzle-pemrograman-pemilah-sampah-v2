@@ -1,20 +1,37 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://ai.google.dev/static/site-assets/images/share-ais-513315318.png" />
-</div>
+# Suka Sorter - Puzzle Pemrograman Pemilah Sampah
 
-# Run and deploy your AI Studio app
+Suka Sorter adalah permainan web edukasi berbasis React, TypeScript, dan Vite yang dirancang untuk melatih kemampuan Computational Thinking, Algoritma, Abstraksi, dan Dekomposisi. Pemain berperan sebagai perancang program untuk memandu 3 robot kota (Organik, Daur Ulang, dan B3) guna membersihkan taman kota secara efisien.
 
-This contains everything you need to run your app locally.
+## Fitur Utama
 
-View your app in AI Studio: https://ai.studio/apps/eecc7bfe-e1bd-48b1-b7f6-10ee062e79f5
+- **Navigasi Multi-Robot Paralel:** Kendalikan 3 robot secara bersamaan melalui program instruksi terpisah.
+- **Deteksi Tabrakan Fisik:** Logika deteksi tabrakan dinamis antar robot, dinding, dan rintangan untuk menjamin validitas algoritma.
+- **Efisiensi Bintang & Langkah:** Bandingkan total baris kode robot Anda dengan target bintang (Bintang 3/Bintang 2) untuk mengukur tingkat efisiensi rute.
+- **Tampilan Desain Premium & Responsif:** Modal instruksi dan hasil game dioptimalkan secara dinamis untuk perangkat berorientasi landscape.
+- **Toggle Backpack Overlay:** Tampilkan atau sembunyikan status tas kapasitas robot pada canvas visualisasi dengan tombol kontrol praktis.
+- **Efek Suara Premium:** Integrasi audio tombol klik orisinal untuk pengalaman bermain yang lebih interaktif.
 
-## Run Locally
+## Cara Menjalankan Aplikasi Secara Lokal
 
-**Prerequisites:**  Node.js
+### Prasyarat
+- Node.js (versi 16 ke atas direkomendasikan)
+- npm (Node Package Manager)
 
+### Langkah-langkah
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+1. **Unduh Dependensi:**
+   ```bash
+   npm install
+   ```
+
+2. **Pengaturan Variabel Lingkungan:**
+   Salin atau buat file `.env.local` di root direktori dan masukkan kunci API Gemini Anda:
+   ```env
+   GEMINI_API_KEY="kunci_api_gemini_anda"
+   ```
+
+3. **Jalankan Server Pengembangan:**
+   ```bash
+   npm run dev
+   ```
+   Aplikasi akan berjalan pada port default: `http://localhost:3000`.
