@@ -1,0 +1,14 @@
+SoundJay Sound Effects License
+==============================
+
+Sound Source: SoundJay.com (Button Sound 1)
+URL: https://www.soundjay.com/button-sounds-1.html
+Local File: assets/click.mp3
+
+Terms of Use Summary:
+---------------------
+- You are allowed to use the sounds on SoundJay website free of charge and royalty-free in your projects (such as this web application).
+- You are NOT allowed to post the sounds on any website for others to download, link directly to individual audio files, or sell the sounds to anyone else.
+
+For full and updated terms, please visit:
+https://www.soundjay.com/terms-of-use.html
