@@ -5,7 +5,7 @@ import {defineConfig} from 'vite';
 
 export default defineConfig(() => {
   return {
-    base: './',
+    base: '/puzzle-pemrograman-pemilah-sampah/',
     plugins: [react(), tailwindcss()],
     resolve: {
       alias: {
