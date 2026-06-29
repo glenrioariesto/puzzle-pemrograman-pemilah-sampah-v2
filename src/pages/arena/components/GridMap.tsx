@@ -10,7 +10,20 @@
 
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { Backpack } from 'lucide-react';
-import { GridPos, TrashOnGrid, TrashCanOnGrid, ObstacleOnGrid, TrashItem, RobotId } from '../../../types';
+import { GridPos, TrashOnGrid, TrashCanOnGrid, ObstacleOnGrid, TrashItem, RobotId, CommandAction } from '../../../types';
+
+// Import character assets
+import charOrganik from '../../../../assets/char-organik.webp';
+import charOrganikAmbil from '../../../../assets/char-organik-ambil.webp';
+import charAnorganik from '../../../../assets/char-anorganik.webp';
+import charAnorganikAmbil from '../../../../assets/char-anorganik-ambil.webp';
+import charB3 from '../../../../assets/char-b3.webp';
+import charB3Ambil from '../../../../assets/char-b3-ambil.webp';
+
+// Import trash can assets
+import tongOrganik from '../../../../assets/tong-organik.webp';
+import tongAnorganik from '../../../../assets/tong-anorganik.webp';
+import tongB3 from '../../../../assets/tong-b3.webp';
 
 export interface RobotRenderData {
   id: RobotId;
@@ -19,6 +32,7 @@ export interface RobotRenderData {
   trailPositions: GridPos[];
   backpack: TrashItem[];
   backpackCapacity: number;
+  activeAction?: CommandAction | null;
 }
 
 interface GridMapProps {
@@ -96,6 +110,53 @@ export default function GridMap(props: GridMapProps) {
   // Backpack overlay visibility state
   const [showBackpack, setShowBackpack] = useState(true);
 
+  // Preload images
+  const [imagesLoaded, setImagesLoaded] = useState(false);
+  const imagesRef = useRef<Record<string, HTMLImageElement>>({});
+
+  // Keep track of the last horizontal direction of each robot to prevent vertical flipping
+  const lastHorizontalDirsRef = useRef<Record<RobotId, 'LEFT' | 'RIGHT'>>({
+    ORGANIC: 'RIGHT',
+    RECYCLABLE: 'RIGHT',
+    B3: 'RIGHT',
+  });
+
+  useEffect(() => {
+    const sources: Record<string, string> = {
+      ORGANIC_idle: charOrganik,
+      ORGANIC_pick: charOrganikAmbil,
+      RECYCLABLE_idle: charAnorganik,
+      RECYCLABLE_pick: charAnorganikAmbil,
+      B3_idle: charB3,
+      B3_pick: charB3Ambil,
+      ORGANIC_can: tongOrganik,
+      RECYCLABLE_can: tongAnorganik,
+      B3_can: tongB3,
+    };
+
+    let loadedCount = 0;
+    const entries = Object.entries(sources);
+    
+    entries.forEach(([key, src]) => {
+      const img = new Image();
+      img.src = src;
+      img.onload = () => {
+        imagesRef.current[key] = img;
+        loadedCount++;
+        if (loadedCount === entries.length) {
+          setImagesLoaded(true);
+        }
+      };
+      img.onerror = () => {
+        console.error('Failed to load image:', src);
+        loadedCount++;
+        if (loadedCount === entries.length) {
+          setImagesLoaded(true);
+        }
+      };
+    });
+  }, []);
+
   // Cell size calculation
   const getCellSize = useCallback((containerW: number, containerH: number) => {
     const padding = 16;
@@ -108,6 +169,13 @@ export default function GridMap(props: GridMapProps) {
 
   // Drawing
   const draw = useCallback(() => {
+    // Update last horizontal directions
+    robots.forEach(r => {
+      if (r.facingDir === 'LEFT' || r.facingDir === 'RIGHT') {
+        lastHorizontalDirsRef.current[r.id] = r.facingDir;
+      }
+    });
+
     const canvas = canvasRef.current;
     const container = containerRef.current;
     if (!canvas || !container) return;
@@ -228,10 +296,17 @@ export default function GridMap(props: GridMapProps) {
 
         // Trash can
         if (hasCan) {
-          ctx.font = `${Math.min(cellSize * 0.45, 24)}px sans-serif`;
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'middle';
-          ctx.fillText(hasCan.emoji, cx2, cy2 - cellSize * 0.08);
+          const canKey = `${hasCan.type}_can`;
+          const canImg = imagesRef.current[canKey];
+          if (canImg) {
+            const canSize = cellSize * 0.7;
+            ctx.drawImage(canImg, cx2 - canSize / 2, cy2 - canSize / 2 - cellSize * 0.04, canSize, canSize);
+          } else {
+            ctx.font = `${Math.min(cellSize * 0.45, 24)}px sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(hasCan.emoji, cx2, cy2 - cellSize * 0.08);
+          }
 
           if (cellSize > 32) {
             const labelSize = Math.max(6, cellSize * 0.16);
@@ -278,56 +353,80 @@ export default function GridMap(props: GridMapProps) {
         });
       }
     }
-  }, [width, height, robots, trashItems, trashCans, obstacles, isExecuting, zoom, offset, getCellSize]);
+  }, [width, height, robots, trashItems, trashCans, obstacles, isExecuting, zoom, offset, getCellSize, imagesLoaded]);
 
   // Draw a single robot with its color
   const drawRobot = (ctx: CanvasRenderingContext2D, cx: number, cy: number, cellSize: number, robot: RobotRenderData) => {
-    const colors = ROBOT_COLORS[robot.id];
-    const robotSize = Math.min(cellSize * 0.55, 34);
     const rx = cx;
     const ry = cy;
 
-    // Robot body
-    ctx.save();
-    ctx.translate(rx, ry);
-    let angle = 0;
-    switch (robot.facingDir) {
-      case 'UP': angle = 0; break;
-      case 'RIGHT': angle = Math.PI / 2; break;
-      case 'DOWN': angle = Math.PI; break;
-      case 'LEFT': angle = -Math.PI / 2; break;
+    const isPicking = robot.activeAction === 'PICK' || robot.activeAction === 'DROP';
+    const robotKey = `${robot.id}_${isPicking ? 'pick' : 'idle'}`;
+    const robotImg = imagesRef.current[robotKey];
+
+    // Resolve direction: UP and DOWN keep the last horizontal direction
+    const resolvedFacingDir = robot.facingDir === 'UP' || robot.facingDir === 'DOWN'
+      ? lastHorizontalDirsRef.current[robot.id]
+      : robot.facingDir;
+
+    if (robotImg) {
+      ctx.save();
+      ctx.translate(rx, ry);
+      
+      let angle = 0;
+      switch (resolvedFacingDir) {
+        case 'RIGHT': angle = Math.PI / 2; break;
+        case 'LEFT': angle = -Math.PI / 2; break;
+      }
+      ctx.rotate(angle);
+
+      // WebP asset drawing
+      const rSize = Math.min(cellSize * 0.75, 46);
+      ctx.drawImage(robotImg, -rSize / 2, -rSize / 2, rSize, rSize);
+      ctx.restore();
+    } else {
+      const colors = ROBOT_COLORS[robot.id];
+      const robotSize = Math.min(cellSize * 0.55, 34);
+      // Fallback: Vector robot body
+      ctx.save();
+      ctx.translate(rx, ry);
+      let angle = 0;
+      switch (resolvedFacingDir) {
+        case 'RIGHT': angle = Math.PI / 2; break;
+        case 'LEFT': angle = -Math.PI / 2; break;
+      }
+      ctx.rotate(angle);
+
+      // Body rectangle
+      const bw = robotSize;
+      const bh = robotSize;
+      ctx.fillStyle = colors.bg;
+      ctx.strokeStyle = colors.border;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      roundRectPath(ctx, -bw / 2, -bh / 2, bw, bh, 5);
+      ctx.fill();
+      ctx.stroke();
+
+      // Eyes (simple dots)
+      const eyeR = robotSize * 0.08;
+      ctx.fillStyle = colors.eye;
+      ctx.beginPath();
+      ctx.arc(-bw * 0.18, -bh * 0.12, eyeR, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(bw * 0.18, -bh * 0.12, eyeR, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Direction triangle
+      ctx.fillStyle = colors.eye;
+      ctx.font = `${robotSize * 0.25}px sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('▶', 0, bh * 0.35);
+
+      ctx.restore();
     }
-    ctx.rotate(angle);
-
-    // Body rectangle
-    const bw = robotSize;
-    const bh = robotSize;
-    ctx.fillStyle = colors.bg;
-    ctx.strokeStyle = colors.border;
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    roundRectPath(ctx, -bw / 2, -bh / 2, bw, bh, 5);
-    ctx.fill();
-    ctx.stroke();
-
-    // Eyes (simple dots)
-    const eyeR = robotSize * 0.08;
-    ctx.fillStyle = colors.eye;
-    ctx.beginPath();
-    ctx.arc(-bw * 0.18, -bh * 0.12, eyeR, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.arc(bw * 0.18, -bh * 0.12, eyeR, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Direction triangle
-    ctx.fillStyle = colors.eye;
-    ctx.font = `${robotSize * 0.25}px sans-serif`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('▶', 0, bh * 0.35);
-
-    ctx.restore();
   };
 
   function hexToRgba(hex: string, alpha: number): string {
@@ -437,10 +536,15 @@ export default function GridMap(props: GridMapProps) {
     setTooltip(null);
   }, []);
 
-  // Reset zoom/pan on grid size change
+  // Reset zoom/pan and direction tracking on grid size change
   useEffect(() => {
     setZoom(1);
     setOffset({ x: 0, y: 0 });
+    lastHorizontalDirsRef.current = {
+      ORGANIC: 'RIGHT',
+      RECYCLABLE: 'RIGHT',
+      B3: 'RIGHT',
+    };
   }, [width, height]);
 
   // Sum all backpacks for total count
@@ -448,7 +552,7 @@ export default function GridMap(props: GridMapProps) {
   const totalCapacity = robots.reduce((sum, r) => sum + r.backpackCapacity, 0);
 
   return (
-    <div className="flex flex-col bg-white border border-[#EED4B7] rounded-2xl sm:rounded-3xl p-1 md:p-6 shadow-xl h-full select-none" id="grid-map-container">
+    <div className="flex flex-col bg-white border border-[#EED4B7] rounded-2xl sm:rounded-3xl p-1 lg:p-6 shadow-xl h-full select-none" id="grid-map-container">
       <div
         ref={containerRef}
         className="flex-1 relative overflow-hidden rounded-2xl border border-[#EED4B7]/80"

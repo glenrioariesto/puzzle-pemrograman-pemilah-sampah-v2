@@ -74,6 +74,7 @@ export default function Arena({
   // Build render data for GridMap
   const robotRenderData: RobotRenderData[] = (level.robots || []).map(robot => {
     const state = robotStates[robot.id];
+    const activeStep = state?.compiledSteps.find(s => s.instructionId === state.activeInstructionId);
     return {
       id: robot.id,
       pos: state?.pos || robot.startPos,
@@ -81,6 +82,7 @@ export default function Arena({
       trailPositions: state?.trailPositions || [],
       backpack: state?.backpack || [],
       backpackCapacity: level.maxCapacity,
+      activeAction: activeStep?.action || null,
     };
   });
 
