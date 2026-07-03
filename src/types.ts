@@ -11,6 +11,7 @@ export interface TrashItem {
   type: TrashType;
   emoji: string;
   color: string; // Tailwind class background or text
+  image?: string;
 }
 
 export interface GridPos {
@@ -39,12 +40,12 @@ export interface ObstacleOnGrid {
   emoji: string;
 }
 
-export type RobotId = 'ORGANIC' | 'RECYCLABLE' | 'B3';
+export type CharacterId = 'ORGANIC' | 'RECYCLABLE' | 'B3';
 
-export interface RobotCharacter {
-  id: RobotId;
+export interface Character {
+  id: CharacterId;
   name: string;
-  color: string; // Tailwind bg color for robot body
+  color: string; // Tailwind bg color for character body
   borderColor: string; // Tailwind border color
   startPos: GridPos;
 }
@@ -69,7 +70,7 @@ export interface GameLevel {
   name: string;
   description: string;
   gridSize: { width: number; height: number };
-  robots: RobotCharacter[];
+  characters: Character[];
   startPos: GridPos;
   trashItems: TrashOnGrid[];
   trashCans: TrashCanOnGrid[];

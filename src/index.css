@@ -1,9 +1,17 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;650&display=swap');
 @import "tailwindcss";
 
+@font-face {
+  font-family: 'CCRegeneration';
+  src: url('../assets/FONNTS.COM-CCREGENERATION.OTF') format('opentype');
+  font-weight: normal;
+  font-style: normal;
+}
+
 @theme {
   --font-sans: "Inter", "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
+  --font-ccregeneration: "CCRegeneration", sans-serif;
 
   /* Map standard gray tokens to a light warm cream and peach palette */
   --color-gray-950: #FEF8F0; /* Main page background: light cream */
@@ -50,12 +58,34 @@
     50% { transform: rotate(90deg); }
     75% { transform: rotate(0deg); }
   }
+
+  --animate-pulse-gentle: pulse-gentle 1.8s infinite ease-in-out;
+
+  @keyframes pulse-gentle {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.06); }
+  }
 }
 
 body {
   background-color: #FEF8F0; /* Warm light cream background */
   color: #1C1917; /* Dark slate text for high contrast readability */
   font-family: var(--font-sans);
+}
+
+/* Set CCRegeneration as the font for all bold texts and headings */
+b,
+strong,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+.font-bold,
+.font-extrabold,
+.font-black {
+  font-family: var(--font-ccregeneration);
 }
 
 /* Custom scrollbars for logs */
@@ -97,4 +127,3 @@ body {
 .custom-scrollbar-light::-webkit-scrollbar-thumb:hover {
   background: rgba(0, 0, 0, 0.25);
 }
-

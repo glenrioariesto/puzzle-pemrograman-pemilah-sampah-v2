@@ -64,9 +64,13 @@ export default function Backpack({ items, capacity }: BackpackProps) {
                 className={`relative flex flex-col items-center justify-center rounded-xl p-2 border aspect-square hover:scale-105 transition-all duration-300 ${getBorderColor(item.type)}`}
                 id={`backpack-slot-filled-${idx}`}
               >
-                <span className="text-2xl filter drop-shadow group-hover:scale-110 transition-transform">
-                  {item.emoji}
-                </span>
+                {item.image ? (
+                  <img src={item.image} alt={item.name} className="w-8 h-8 object-contain filter drop-shadow group-hover:scale-110 transition-transform" />
+                ) : (
+                  <span className="text-2xl filter drop-shadow group-hover:scale-110 transition-transform">
+                    {item.emoji}
+                  </span>
+                )}
                 <span className={`absolute -bottom-1 px-1 py-0.1 border rounded text-[6px] tracking-wider font-extrabold uppercase truncate max-w-full ${getLabelColor(item.type)}`}>
                   {getTypeNameInIndonesian(item.type)}
                 </span>
@@ -93,7 +97,7 @@ export default function Backpack({ items, capacity }: BackpackProps) {
       ) : (
         <div className="text-[10px] text-stone-600 flex items-center gap-1.5 bg-indigo-55 bg-indigo-50 border border-indigo-200 p-2.5 rounded-xl">
           <Sparkles className="w-3.5 h-3.5 text-indigo-600 flex-shrink-0 animate-pulse" />
-          <span>Robot sedang mengangkut {items.length} jenis sampah. Pergi ke tong sampah yang serasi lalu gunakan block <b>Buang Sampah</b> (🗑️).</span>
+          <span>Karakter sedang mengangkut {items.length} jenis sampah. Pergi ke tong sampah yang serasi lalu gunakan block <b>Buang Sampah</b> (🗑️).</span>
         </div>
       )}
     </div>

@@ -8,15 +8,16 @@ import {
   GameLevel,
   Instruction,
   CommandAction,
-  RobotId,
+  CharacterId,
   GridPos,
-  TrashOnGrid
+  TrashOnGrid,
+  Character
 } from '../../../types';
 
 import clickSfx from '../../../../assets/click.mp3';
 
-// Per-robot execution state
-interface RobotState {
+// Per-character execution state
+interface CharacterState {
   pos: GridPos;
   facingDir: 'UP' | 'DOWN' | 'LEFT' | 'RIGHT';
   instructions: Instruction[];
@@ -36,28 +37,28 @@ export function useArenaGame(
   isMuted: boolean,
   onSaveHighScore: (levelId: number, stars: number, minSteps: number) => void
 ) {
-  // --- Initial Robot States Helper ---
-  const createInitialRobotStates = (): Record<RobotId, RobotState> => {
-    const states: Record<string, RobotState> = {};
-    for (const robot of level.robots) {
-      states[robot.id] = {
-        pos: { ...robot.startPos },
+  // --- Initial Character States Helper ---
+  const createInitialCharacterStates = (): Record<CharacterId, CharacterState> => {
+    const states: Record<string, CharacterState> = {};
+    for (const character of level.characters) {
+      states[character.id] = {
+        pos: { ...character.startPos },
         facingDir: 'RIGHT',
         instructions: [],
         compiledSteps: [],
         playbackIndex: 0,
         activeInstructionId: null,
         backpack: [],
-        trailPositions: [{ ...robot.startPos }],
+        trailPositions: [{ ...character.startPos }],
         finished: false,
         hasErrored: false,
       };
     }
-    return states as Record<RobotId, RobotState>;
+    return states as Record<CharacterId, CharacterState>;
   };
 
-  const [activeRobot, setActiveRobot] = useState<RobotId>('ORGANIC');
-  const [robotStates, setRobotStates] = useState<Record<RobotId, RobotState>>(createInitialRobotStates);
+  const [activeCharacter, setActiveCharacter] = useState<CharacterId>('ORGANIC');
+  const [characterStates, setCharacterStates] = useState<Record<CharacterId, CharacterState>>(createInitialCharacterStates);
 
   // Simulation execution tracking states
   const [isExecuting, setIsExecuting] = useState(false);
@@ -76,8 +77,8 @@ export function useArenaGame(
   const [showHintsModal, setShowHintsModal] = useState(false);
 
   // Execution refs — mutable state during interval to avoid stale closures
-  const robotStatesRef = useRef<Record<RobotId, RobotState>>(robotStates);
-  robotStatesRef.current = robotStates;
+  const characterStatesRef = useRef<Record<CharacterId, CharacterState>>(characterStates);
+  characterStatesRef.current = characterStates;
   const activeTrashRef = useRef<TrashOnGrid[]>(activeTrash);
   activeTrashRef.current = activeTrash;
   const logsRef = useRef<string[]>(logs);
@@ -88,17 +89,23 @@ export function useArenaGame(
   const [execSpeed, setExecSpeed] = useState(1);
 
   // Initialize level upon load
+  const getCharacterLabel = (id: CharacterId) => {
+    if (id === 'ORGANIC') return 'Organik';
+    if (id === 'RECYCLABLE') return 'Daur Ulang';
+    return 'B3';
+  };
+
   useEffect(() => {
-    const initial = createInitialRobotStates();
-    setRobotStates(initial);
-    robotStatesRef.current = initial;
+    const initial = createInitialCharacterStates();
+    setCharacterStates(initial);
+    characterStatesRef.current = initial;
     const trash = level.trashItems.map(t => ({ ...t, collected: false }));
     setActiveTrash(trash);
     activeTrashRef.current = trash;
     setLogs([
       `[Sistem] Memuat Level ${level.id}: ${level.name}`,
-      `[Sistem] 3 Robot siap: Organik 🤖, Daur Ulang 🤖, B3 🤖`,
-      `[Sistem] Klik tab robot untuk berganti, susun program masing-masing.`
+      `[Sistem] 3 Karakter siap: Organik 🧹, Daur Ulang 🎒, B3 🗑️`,
+      `[Sistem] Klik tab karakter untuk berganti, susun program masing-masing.`
     ]);
     setGameResult(null);
     setShowResultModal(false);
@@ -108,71 +115,81 @@ export function useArenaGame(
   // Helper labels
   const getIndonesianLabel = (action: CommandAction) => {
     switch (action) {
-      case 'UP': return 'Maju ⬆️';
-      case 'DOWN': return 'Mundur ⬇️';
-      case 'LEFT': return 'Belok Kiri ⬅️';
-      case 'RIGHT': return 'Belok Kanan ➡️';
+      case 'UP': return 'Atas ⬆️';
+      case 'DOWN': return 'Bawah ⬇️';
+      case 'LEFT': return 'Kiri ⬅️';
+      case 'RIGHT': return 'Kanan ➡️';
       case 'PICK': return 'Ambil Sampah 👐';
       case 'DROP': return 'Buang Sampah 🗑️';
       default: return '';
     }
   };
 
-  // --- Robot Program Handlers ---
+  // --- Character Program Handlers ---
   const handleAddCommand = (action: CommandAction) => {
     playSound('click');
-    setRobotStates(prev => {
-      const state = prev[activeRobot];
+    setCharacterStates(prev => {
+      const state = prev[activeCharacter];
       const newInst: Instruction = { id: uuid(), type: action };
       return {
         ...prev,
-        [activeRobot]: {
+        [activeCharacter]: {
           ...state,
           instructions: [...state.instructions, newInst]
         }
       };
     });
-    setLogs(prev => [...prev, `[Sistem] ${activeRobot}: Menambahkan blok: ${getIndonesianLabel(action)}`]);
+    setLogs(prev => [...prev, `[Sistem] ${getCharacterLabel(activeCharacter)}: Menambahkan blok: ${getIndonesianLabel(action)}`]);
   };
 
   const handleClearInstructions = () => {
     playSound('click');
-    setRobotStates(prev => ({
+    setCharacterStates(prev => ({
       ...prev,
-      [activeRobot]: { ...prev[activeRobot], instructions: [] }
+      [activeCharacter]: { ...prev[activeCharacter], instructions: [] }
     }));
-    setLogs(prev => [...prev, `[Sistem] ${activeRobot}: Program dikosongkan.`]);
+    setLogs(prev => [...prev, `[Sistem] ${getCharacterLabel(activeCharacter)}: Program dikosongkan.`]);
+  };
+
+  const handleUpdateInstructions = (characterId: CharacterId, updated: Instruction[]) => {
+    setCharacterStates(prev => ({
+      ...prev,
+      [characterId]: {
+        ...prev[characterId],
+        instructions: updated
+      }
+    }));
   };
 
   const handleDeleteCommand = (id: string) => {
     playSound('click');
-    setRobotStates(prev => ({
+    setCharacterStates(prev => ({
       ...prev,
-      [activeRobot]: { ...prev[activeRobot], instructions: prev[activeRobot].instructions.filter(item => item.id !== id) }
+      [activeCharacter]: { ...prev[activeCharacter], instructions: prev[activeCharacter].instructions.filter(item => item.id !== id) }
     }));
   };
 
   const handleMoveCommandUp = (index: number) => {
     if (index === 0) return;
     playSound('click');
-    setRobotStates(prev => {
-      const copy = [...prev[activeRobot].instructions];
+    setCharacterStates(prev => {
+      const copy = [...prev[activeCharacter].instructions];
       const temp = copy[index];
       copy[index] = copy[index - 1];
       copy[index - 1] = temp;
-      return { ...prev, [activeRobot]: { ...prev[activeRobot], instructions: copy } };
+      return { ...prev, [activeCharacter]: { ...prev[activeCharacter], instructions: copy } };
     });
   };
 
   const handleMoveCommandDown = (index: number) => {
-    if (index >= robotStates[activeRobot].instructions.length - 1) return;
+    if (index >= characterStates[activeCharacter].instructions.length - 1) return;
     playSound('click');
-    setRobotStates(prev => {
-      const copy = [...prev[activeRobot].instructions];
+    setCharacterStates(prev => {
+      const copy = [...prev[activeCharacter].instructions];
       const temp = copy[index];
       copy[index] = copy[index + 1];
       copy[index + 1] = temp;
-      return { ...prev, [activeRobot]: { ...prev[activeRobot], instructions: copy } };
+      return { ...prev, [activeCharacter]: { ...prev[activeCharacter], instructions: copy } };
     });
   };
 
@@ -245,39 +262,39 @@ export function useArenaGame(
 
   // --- Execution Control ---
   const handleStartExecution = () => {
-    // Check if any robot has a program
-    const hasProgram = Object.values(robotStatesRef.current).some(r => r.instructions.length > 0);
+    // Check if any character has a program
+    const hasProgram = Object.values(characterStatesRef.current).some(c => c.instructions.length > 0);
     if (!hasProgram) return;
     playSound('click');
 
-    const newRobots: Record<RobotId, RobotState> = {} as Record<RobotId, RobotState>;
-    for (const robot of level.robots) {
-      const state = robotStatesRef.current[robot.id] || robotStates[robot.id];
-      newRobots[robot.id] = {
-        pos: { ...robot.startPos },
+    const newCharacters: Record<CharacterId, CharacterState> = {} as Record<CharacterId, CharacterState>;
+    for (const character of level.characters) {
+      const state = characterStatesRef.current[character.id] || characterStates[character.id];
+      newCharacters[character.id] = {
+        pos: { ...character.startPos },
         facingDir: 'RIGHT',
         instructions: state?.instructions || [],
         compiledSteps: compileInstructions(state?.instructions || []),
         playbackIndex: 0,
         activeInstructionId: null,
         backpack: [],
-        trailPositions: [{ ...robot.startPos }],
+        trailPositions: [{ ...character.startPos }],
         finished: false,
         hasErrored: false,
       };
     }
 
-    setRobotStates(newRobots);
-    robotStatesRef.current = newRobots;
+    setCharacterStates(newCharacters);
+    characterStatesRef.current = newCharacters;
     const trash = level.trashItems.map(t => ({ ...t, collected: false }));
     setActiveTrash(trash);
     activeTrashRef.current = trash;
     setIsExecuting(true);
 
-    const totalCmds = Object.values(newRobots).reduce((s, r) => s + r.compiledSteps.length, 0);
+    const totalCmds = Object.values(newCharacters).reduce((s, c) => s + c.compiledSteps.length, 0);
     setLogs([
-      `[Sistem] Menghidupkan 3 Sorter...`,
-      `[Sistem] Total ${Object.keys(newRobots).length} robot, ${totalCmds} langkah terkompilasi.`
+      `[Sistem] Memulai simulasi...`,
+      `[Sistem] Total ${Object.keys(newCharacters).length} karakter, ${totalCmds} langkah terkompilasi.`
     ]);
   };
 
@@ -291,54 +308,57 @@ export function useArenaGame(
   const handleReset = () => {
     if (intervalRef.current) clearInterval(intervalRef.current);
     setIsExecuting(false);
-    // Preserve user programs, reset only positions/backpacks/trails
-    setRobotStates(prev => {
-      const updated: Record<string, RobotState> = {};
-      for (const robot of level.robots) {
-        const existing = prev[robot.id];
-        updated[robot.id] = {
-          pos: { ...robot.startPos },
+    // Clear all user programs and reset positions/backpacks/trails
+    setCharacterStates(prev => {
+      const updated: Record<string, CharacterState> = {};
+      for (const character of level.characters) {
+        updated[character.id] = {
+          pos: { ...character.startPos },
           facingDir: 'RIGHT',
-          instructions: existing?.instructions || [],
+          instructions: [],
           compiledSteps: [],
           playbackIndex: 0,
           activeInstructionId: null,
           backpack: [],
-          trailPositions: [{ ...robot.startPos }],
+          trailPositions: [{ ...character.startPos }],
           finished: false,
           hasErrored: false,
         };
       }
-      return updated as Record<RobotId, RobotState>;
+      return updated as Record<CharacterId, CharacterState>;
     });
+
     const trash = level.trashItems.map(t => ({ ...t, collected: false }));
     setActiveTrash(trash);
     activeTrashRef.current = trash;
     setGameResult(null);
     setShowResultModal(false);
-    setLogs(prev => [...prev, `[Sistem] Semua robot dan sampah direset.`]);
+    setLogs([
+      `[Sistem] Reset: Simulasi diatur ulang & semua program dikosongkan.`,
+      `[Sistem] Klik tab karakter untuk menyusun program.`
+    ]);
   };
 
   // --- Collision detection ---
   const checkCollision = (
     targetX: number, targetY: number,
-    robots: Record<RobotId, RobotState>,
-    currentRobotId: RobotId
-  ): 'OK' | 'WALL' | 'OBSTACLE' | 'ROBOT' => {
+    characters: Record<CharacterId, CharacterState>,
+    currentCharacterId: CharacterId
+  ): 'OK' | 'WALL' | 'OBSTACLE' | 'CHARACTER' => {
     if (targetX < 0 || targetX >= level.gridSize.width || targetY < 0 || targetY >= level.gridSize.height) {
       return 'WALL';
     }
     const obstacle = level.obstacles.find(o => o.pos.x === targetX && o.pos.y === targetY);
     if (obstacle) return 'OBSTACLE';
-    // Check if another robot is already at target position (active, finished, or errored)
-    const otherRobot = Object.entries(robots).find(([id, r]) => id !== currentRobotId && r.pos.x === targetX && r.pos.y === targetY);
-    if (otherRobot) return 'ROBOT';
+    // Check if another character is already at target position (active, finished, or errored)
+    const otherCharacter = Object.entries(characters).find(([id, c]) => id !== currentCharacterId && c.pos.x === targetX && c.pos.y === targetY);
+    if (otherCharacter) return 'CHARACTER';
     return 'OK';
   };
 
-  // Clone robot states for React state (avoids mutation issues)
-  const cloneRobotStates = (states: Record<RobotId, RobotState>): Record<RobotId, RobotState> => {
-    const cloned: Record<string, RobotState> = {};
+  // Clone character states for React state (avoids mutation issues)
+  const cloneCharacterStates = (states: Record<CharacterId, CharacterState>): Record<CharacterId, CharacterState> => {
+    const cloned: Record<string, CharacterState> = {};
     for (const [id, s] of Object.entries(states)) {
       cloned[id] = {
         ...s,
@@ -349,26 +369,26 @@ export function useArenaGame(
         trailPositions: [...s.trailPositions],
       };
     }
-    return cloned as Record<RobotId, RobotState>;
+    return cloned as Record<CharacterId, CharacterState>;
   };
 
   // --- Result Evaluation ---
-  const evaluateGameResult = (finalRobots: Record<RobotId, RobotState>, finalTrash: TrashOnGrid[]) => {
+  const evaluateGameResult = (finalCharacters: Record<CharacterId, CharacterState>, finalTrash: TrashOnGrid[]) => {
     const someTrashLeaking = finalTrash.some(t => !t.collected);
-    const backpackNotEmpty = Object.values(finalRobots).some(r => r.backpack.length > 0);
-    const anyError = Object.values(finalRobots).some(r => r.hasErrored);
+    const backpackNotEmpty = Object.values(finalCharacters).some(c => c.backpack.length > 0);
+    const anyError = Object.values(finalCharacters).some(c => c.hasErrored);
 
     if (someTrashLeaking || backpackNotEmpty || anyError) {
       playSound('fail');
       setLogs(prev => [
         ...prev,
-        `[Kesalahan] Misi gagal! Beberapa sampah masih berserakan atau robot membawa sampah di tas.`
+        `[Kesalahan] Misi gagal! Beberapa sampah masih berserakan atau karakter membawa sampah di tas.`
       ]);
       setGameResult('FAILED');
       setShowResultModal(true);
     } else {
       playSound('success');
-      const codeSizeUsed = Object.values(finalRobots).reduce((sum, r) => sum + r.compiledSteps.length, 0);
+      const codeSizeUsed = Object.values(finalCharacters).reduce((sum, c) => sum + c.compiledSteps.length, 0);
 
       let stars = 1;
       if (codeSizeUsed <= level.starsThreshold.three) {
@@ -383,7 +403,7 @@ export function useArenaGame(
       setShowResultModal(true);
       setLogs(prev => [
         ...prev, '',
-        `[Pilah Sukses] SELAMAT! Taman bersih! Total ${codeSizeUsed} langkah dari 3 robot! 🎉`,
+        `[Pilah Sukses] SELAMAT! Taman bersih! Total ${codeSizeUsed} langkah karakter! 🎉`,
         `[Pilah Sukses] Peringkat: ${stars} / 3 Bintang.`
       ]);
       onSaveHighScore(level.id, stars, codeSizeUsed);
@@ -400,216 +420,216 @@ export function useArenaGame(
     const intervalTime = 650 / execSpeed;
 
     intervalRef.current = setInterval(() => {
-      const currentRobots = { ...robotStatesRef.current };
+      const currentCharacters = { ...characterStatesRef.current };
       const currentTrash = [...activeTrashRef.current];
       const newLogs: string[] = [];
       let allFinished = true;
       let hasError = false;
 
-      // Process each robot's next step
-      for (const robotId of Object.keys(currentRobots) as RobotId[]) {
-        const robot = { ...currentRobots[robotId] };
-        if (robot.finished || robot.hasErrored) continue;
+      // Process each character's next step
+      for (const characterId of Object.keys(currentCharacters) as CharacterId[]) {
+        const character = { ...currentCharacters[characterId] };
+        if (character.finished || character.hasErrored) continue;
 
-        if (robot.playbackIndex >= robot.compiledSteps.length) {
-          robot.finished = true;
-          currentRobots[robotId] = robot;
+        if (character.playbackIndex >= character.compiledSteps.length) {
+          character.finished = true;
+          currentCharacters[characterId] = character;
           continue;
         }
 
         allFinished = false;
-        const step = robot.compiledSteps[robot.playbackIndex];
-        robot.activeInstructionId = step.instructionId;
+        const step = character.compiledSteps[character.playbackIndex];
+        character.activeInstructionId = step.instructionId;
 
-        const robotLabel = `${robotId}`;
-        const stepNum = robot.playbackIndex + 1;
+        const characterLabel = getCharacterLabel(characterId);
+        const stepNum = character.playbackIndex + 1;
 
         switch (step.action) {
           case 'UP': {
             playSound('jump');
-            const targetX = robot.pos.x;
-            const targetY = robot.pos.y - 1;
-            robot.facingDir = 'UP';
+            const targetX = character.pos.x;
+            const targetY = character.pos.y - 1;
+            character.facingDir = 'UP';
 
-            const collision = checkCollision(targetX, targetY, currentRobots, robotId);
+            const collision = checkCollision(targetX, targetY, currentCharacters, characterId);
             if (collision === 'WALL') {
-              playSound('crash'); robot.hasErrored = true; currentRobots[robotId] = robot; hasError = true;
-              newLogs.push(`[Gerakan] ${robotLabel} langkah ${stepNum}: Bergerak ke atas...`);
-              newLogs.push(`[Kesalahan] ${robotLabel} menabrak dinding taman di (${targetX}, ${targetY})! 💥`);
+              playSound('crash'); character.hasErrored = true; currentCharacters[characterId] = character; hasError = true;
+              newLogs.push(`[Gerakan] ${characterLabel} langkah ${stepNum}: Bergerak ke atas...`);
+              newLogs.push(`[Kesalahan] ${characterLabel} menabrak dinding taman di (${targetX}, ${targetY})! 💥`);
               break;
             }
             if (collision === 'OBSTACLE') {
-              playSound('crash'); robot.hasErrored = true; currentRobots[robotId] = robot; hasError = true;
-              newLogs.push(`[Gerakan] ${robotLabel} langkah ${stepNum}: Bergerak ke atas...`);
+              playSound('crash'); character.hasErrored = true; currentCharacters[characterId] = character; hasError = true;
+              newLogs.push(`[Gerakan] ${characterLabel} langkah ${stepNum}: Bergerak ke atas...`);
               const obs = level.obstacles.find(o => o.pos.x === targetX && o.pos.y === targetY);
-              newLogs.push(`[Kesalahan] ${robotLabel} menabrak rintangan ${obs?.emoji || '?'} di (${targetX}, ${targetY})! 💥`);
+              newLogs.push(`[Kesalahan] ${characterLabel} menabrak rintangan ${obs?.emoji || '?'} di (${targetX}, ${targetY})! 💥`);
               break;
             }
-            if (collision === 'ROBOT') {
-              playSound('crash'); robot.hasErrored = true; currentRobots[robotId] = robot; hasError = true;
-              newLogs.push(`[Gerakan] ${robotLabel} langkah ${stepNum}: Bergerak ke atas...`);
-              newLogs.push(`[Kesalahan] ${robotLabel} bertabrakan dengan robot lain di (${targetX}, ${targetY})! 💥`);
+            if (collision === 'CHARACTER') {
+              playSound('crash'); character.hasErrored = true; currentCharacters[characterId] = character; hasError = true;
+              newLogs.push(`[Gerakan] ${characterLabel} langkah ${stepNum}: Bergerak ke atas...`);
+              newLogs.push(`[Kesalahan] ${characterLabel} bertabrakan dengan karakter lain di (${targetX}, ${targetY})! 💥`);
               break;
             }
 
-            robot.pos = { x: targetX, y: targetY };
-            robot.trailPositions = [...robot.trailPositions, { x: targetX, y: targetY }];
-            newLogs.push(`[Gerakan] ${robotLabel} langkah ${stepNum}: Melangkah ke (${targetX}, ${targetY}).`);
+            character.pos = { x: targetX, y: targetY };
+            character.trailPositions = [...character.trailPositions, { x: targetX, y: targetY }];
+            newLogs.push(`[Gerakan] ${characterLabel} langkah ${stepNum}: Melangkah ke (${targetX}, ${targetY}).`);
             break;
           }
 
           case 'DOWN': {
             playSound('jump');
-            const targetX = robot.pos.x;
-            const targetY = robot.pos.y + 1;
-            robot.facingDir = 'DOWN';
+            const targetX = character.pos.x;
+            const targetY = character.pos.y + 1;
+            character.facingDir = 'DOWN';
 
-            const collision = checkCollision(targetX, targetY, currentRobots, robotId);
+            const collision = checkCollision(targetX, targetY, currentCharacters, characterId);
             if (collision === 'WALL') {
-              playSound('crash'); robot.hasErrored = true; currentRobots[robotId] = robot; hasError = true;
-              newLogs.push(`[Gerakan] ${robotLabel} langkah ${stepNum}: Bergerak ke bawah...`);
-              newLogs.push(`[Kesalahan] ${robotLabel} menabrak dinding taman di (${targetX}, ${targetY})! 💥`);
+              playSound('crash'); character.hasErrored = true; currentCharacters[characterId] = character; hasError = true;
+              newLogs.push(`[Gerakan] ${characterLabel} langkah ${stepNum}: Bergerak ke bawah...`);
+              newLogs.push(`[Kesalahan] ${characterLabel} menabrak dinding taman di (${targetX}, ${targetY})! 💥`);
               break;
             }
             if (collision === 'OBSTACLE') {
-              playSound('crash'); robot.hasErrored = true; currentRobots[robotId] = robot; hasError = true;
-              newLogs.push(`[Gerakan] ${robotLabel} langkah ${stepNum}: Bergerak ke bawah...`);
+              playSound('crash'); character.hasErrored = true; currentCharacters[characterId] = character; hasError = true;
+              newLogs.push(`[Gerakan] ${characterLabel} langkah ${stepNum}: Bergerak ke bawah...`);
               const obs = level.obstacles.find(o => o.pos.x === targetX && o.pos.y === targetY);
-              newLogs.push(`[Kesalahan] ${robotLabel} menabrak rintangan ${obs?.emoji || '?'} di (${targetX}, ${targetY})! 💥`);
+              newLogs.push(`[Kesalahan] ${characterLabel} menabrak rintangan ${obs?.emoji || '?'} di (${targetX}, ${targetY})! 💥`);
               break;
             }
-            if (collision === 'ROBOT') {
-              playSound('crash'); robot.hasErrored = true; currentRobots[robotId] = robot; hasError = true;
-              newLogs.push(`[Gerakan] ${robotLabel} langkah ${stepNum}: Bergerak ke bawah...`);
-              newLogs.push(`[Kesalahan] ${robotLabel} bertabrakan dengan robot lain di (${targetX}, ${targetY})! 💥`);
+            if (collision === 'CHARACTER') {
+              playSound('crash'); character.hasErrored = true; currentCharacters[characterId] = character; hasError = true;
+              newLogs.push(`[Gerakan] ${characterLabel} langkah ${stepNum}: Bergerak ke bawah...`);
+              newLogs.push(`[Kesalahan] ${characterLabel} bertabrakan dengan karakter lain di (${targetX}, ${targetY})! 💥`);
               break;
             }
 
-            robot.pos = { x: targetX, y: targetY };
-            robot.trailPositions = [...robot.trailPositions, { x: targetX, y: targetY }];
-            newLogs.push(`[Gerakan] ${robotLabel} langkah ${stepNum}: Melangkah ke (${targetX}, ${targetY}).`);
+            character.pos = { x: targetX, y: targetY };
+            character.trailPositions = [...character.trailPositions, { x: targetX, y: targetY }];
+            newLogs.push(`[Gerakan] ${characterLabel} langkah ${stepNum}: Melangkah ke (${targetX}, ${targetY}).`);
             break;
           }
 
           case 'LEFT': {
             playSound('jump');
-            const targetX = robot.pos.x - 1;
-            const targetY = robot.pos.y;
-            robot.facingDir = 'LEFT';
+            const targetX = character.pos.x - 1;
+            const targetY = character.pos.y;
+            character.facingDir = 'LEFT';
 
-            const collision = checkCollision(targetX, targetY, currentRobots, robotId);
+            const collision = checkCollision(targetX, targetY, currentCharacters, characterId);
             if (collision === 'WALL') {
-              playSound('crash'); robot.hasErrored = true; currentRobots[robotId] = robot; hasError = true;
-              newLogs.push(`[Gerakan] ${robotLabel} langkah ${stepNum}: Bergerak ke kiri...`);
-              newLogs.push(`[Kesalahan] ${robotLabel} menabrak dinding taman di (${targetX}, ${targetY})! 💥`);
+              playSound('crash'); character.hasErrored = true; currentCharacters[characterId] = character; hasError = true;
+              newLogs.push(`[Gerakan] ${characterLabel} langkah ${stepNum}: Bergerak ke kiri...`);
+              newLogs.push(`[Kesalahan] ${characterLabel} menabrak dinding taman di (${targetX}, ${targetY})! 💥`);
               break;
             }
             if (collision === 'OBSTACLE') {
-              playSound('crash'); robot.hasErrored = true; currentRobots[robotId] = robot; hasError = true;
-              newLogs.push(`[Gerakan] ${robotLabel} langkah ${stepNum}: Bergerak ke kiri...`);
+              playSound('crash'); character.hasErrored = true; currentCharacters[characterId] = character; hasError = true;
+              newLogs.push(`[Gerakan] ${characterLabel} langkah ${stepNum}: Bergerak ke kiri...`);
               const obs = level.obstacles.find(o => o.pos.x === targetX && o.pos.y === targetY);
-              newLogs.push(`[Kesalahan] ${robotLabel} menabrak rintangan ${obs?.emoji || '?'} di (${targetX}, ${targetY})! 💥`);
+              newLogs.push(`[Kesalahan] ${characterLabel} menabrak rintangan ${obs?.emoji || '?'} di (${targetX}, ${targetY})! 💥`);
               break;
             }
-            if (collision === 'ROBOT') {
-              playSound('crash'); robot.hasErrored = true; currentRobots[robotId] = robot; hasError = true;
-              newLogs.push(`[Gerakan] ${robotLabel} langkah ${stepNum}: Bergerak ke kiri...`);
-              newLogs.push(`[Kesalahan] ${robotLabel} bertabrakan dengan robot lain di (${targetX}, ${targetY})! 💥`);
+            if (collision === 'CHARACTER') {
+              playSound('crash'); character.hasErrored = true; currentCharacters[characterId] = character; hasError = true;
+              newLogs.push(`[Gerakan] ${characterLabel} langkah ${stepNum}: Bergerak ke kiri...`);
+              newLogs.push(`[Kesalahan] ${characterLabel} bertabrakan dengan karakter lain di (${targetX}, ${targetY})! 💥`);
               break;
             }
 
-            robot.pos = { x: targetX, y: targetY };
-            robot.trailPositions = [...robot.trailPositions, { x: targetX, y: targetY }];
-            newLogs.push(`[Gerakan] ${robotLabel} langkah ${stepNum}: Melangkah ke (${targetX}, ${targetY}).`);
+            character.pos = { x: targetX, y: targetY };
+            character.trailPositions = [...character.trailPositions, { x: targetX, y: targetY }];
+            newLogs.push(`[Gerakan] ${characterLabel} langkah ${stepNum}: Melangkah ke (${targetX}, ${targetY}).`);
             break;
           }
 
           case 'RIGHT': {
             playSound('jump');
-            const targetX = robot.pos.x + 1;
-            const targetY = robot.pos.y;
-            robot.facingDir = 'RIGHT';
+            const targetX = character.pos.x + 1;
+            const targetY = character.pos.y;
+            character.facingDir = 'RIGHT';
 
-            const collision = checkCollision(targetX, targetY, currentRobots, robotId);
+            const collision = checkCollision(targetX, targetY, currentCharacters, characterId);
             if (collision === 'WALL') {
-              playSound('crash'); robot.hasErrored = true; currentRobots[robotId] = robot; hasError = true;
-              newLogs.push(`[Gerakan] ${robotLabel} langkah ${stepNum}: Bergerak ke kanan...`);
-              newLogs.push(`[Kesalahan] ${robotLabel} menabrak dinding taman di (${targetX}, ${targetY})! 💥`);
+              playSound('crash'); character.hasErrored = true; currentCharacters[characterId] = character; hasError = true;
+              newLogs.push(`[Gerakan] ${characterLabel} langkah ${stepNum}: Bergerak ke kanan...`);
+              newLogs.push(`[Kesalahan] ${characterLabel} menabrak dinding taman di (${targetX}, ${targetY})! 💥`);
               break;
             }
             if (collision === 'OBSTACLE') {
-              playSound('crash'); robot.hasErrored = true; currentRobots[robotId] = robot; hasError = true;
-              newLogs.push(`[Gerakan] ${robotLabel} langkah ${stepNum}: Bergerak ke kanan...`);
+              playSound('crash'); character.hasErrored = true; currentCharacters[characterId] = character; hasError = true;
+              newLogs.push(`[Gerakan] ${characterLabel} langkah ${stepNum}: Bergerak ke kanan...`);
               const obs = level.obstacles.find(o => o.pos.x === targetX && o.pos.y === targetY);
-              newLogs.push(`[Kesalahan] ${robotLabel} menabrak rintangan ${obs?.emoji || '?'} di (${targetX}, ${targetY})! 💥`);
+              newLogs.push(`[Kesalahan] ${characterLabel} menabrak rintangan ${obs?.emoji || '?'} di (${targetX}, ${targetY})! 💥`);
               break;
             }
-            if (collision === 'ROBOT') {
-              playSound('crash'); robot.hasErrored = true; currentRobots[robotId] = robot; hasError = true;
-              newLogs.push(`[Gerakan] ${robotLabel} langkah ${stepNum}: Bergerak ke kanan...`);
-              newLogs.push(`[Kesalahan] ${robotLabel} bertabrakan dengan robot lain di (${targetX}, ${targetY})! 💥`);
+            if (collision === 'CHARACTER') {
+              playSound('crash'); character.hasErrored = true; currentCharacters[characterId] = character; hasError = true;
+              newLogs.push(`[Gerakan] ${characterLabel} langkah ${stepNum}: Bergerak ke kanan...`);
+              newLogs.push(`[Kesalahan] ${characterLabel} bertabrakan dengan karakter lain di (${targetX}, ${targetY})! 💥`);
               break;
             }
 
-            robot.pos = { x: targetX, y: targetY };
-            robot.trailPositions = [...robot.trailPositions, { x: targetX, y: targetY }];
-            newLogs.push(`[Gerakan] ${robotLabel} langkah ${stepNum}: Melangkah ke (${targetX}, ${targetY}).`);
+            character.pos = { x: targetX, y: targetY };
+            character.trailPositions = [...character.trailPositions, { x: targetX, y: targetY }];
+            newLogs.push(`[Gerakan] ${characterLabel} langkah ${stepNum}: Melangkah ke (${targetX}, ${targetY}).`);
             break;
           }
 
           case 'PICK': {
             const foundIdx = currentTrash.findIndex(
-              t => t.pos.x === robot.pos.x && t.pos.y === robot.pos.y && !t.collected && t.item.type === robotId
+              t => t.pos.x === character.pos.x && t.pos.y === character.pos.y && !t.collected && t.item.type === characterId
             );
             if (foundIdx !== -1) {
               const targetTrash = currentTrash[foundIdx];
-              if (robot.backpack.length >= level.maxCapacity) {
+              if (character.backpack.length >= level.maxCapacity) {
                 playSound('fail');
-                robot.hasErrored = true; currentRobots[robotId] = robot; hasError = true;
-                newLogs.push(`[Aksi] ${robotLabel} langkah ${stepNum}: Ingin mengambil ${targetTrash.item.name} di (${robot.pos.x}, ${robot.pos.y}).`);
-                newLogs.push(`[Kesalahan] ${robotLabel} gagal! Tas penuh! Kapasitas maksimal ${level.maxCapacity}.`);
+                character.hasErrored = true; currentCharacters[characterId] = character; hasError = true;
+                newLogs.push(`[Aksi] ${characterLabel} langkah ${stepNum}: Ingin mengambil ${targetTrash.item.name} di (${character.pos.x}, ${character.pos.y}).`);
+                newLogs.push(`[Kesalahan] ${characterLabel} gagal! Tas penuh! Kapasitas maksimal ${level.maxCapacity}.`);
                 break;
               }
               playSound('collect');
               currentTrash[foundIdx] = { ...targetTrash, collected: true };
-              robot.backpack = [...robot.backpack, targetTrash.item];
-              newLogs.push(`[Aksi] ${robotLabel} langkah ${stepNum}: Mengambil "${targetTrash.item.name}" ${targetTrash.item.emoji} di (${robot.pos.x}, ${robot.pos.y}).`);
+              character.backpack = [...character.backpack, targetTrash.item];
+              newLogs.push(`[Aksi] ${characterLabel} langkah ${stepNum}: Mengambil "${targetTrash.item.name}" ${targetTrash.item.emoji} di (${character.pos.x}, ${character.pos.y}).`);
             } else {
-              newLogs.push(`[Perhatian] ${robotLabel} langkah ${stepNum}: Tidak ada sampah di (${robot.pos.x}, ${robot.pos.y})!`);
+              newLogs.push(`[Perhatian] ${characterLabel} langkah ${stepNum}: Tidak ada sampah di (${character.pos.x}, ${character.pos.y})!`);
             }
             break;
           }
 
           case 'DROP': {
             const foundCan = level.trashCans.find(
-              tc => tc.pos.x === robot.pos.x && tc.pos.y === robot.pos.y
+              tc => tc.pos.x === character.pos.x && tc.pos.y === character.pos.y
             );
             if (foundCan) {
-              const matchingItems = robot.backpack.filter(item => item.type === foundCan.type);
+              const matchingItems = character.backpack.filter(item => item.type === foundCan.type);
               if (matchingItems.length > 0) {
                 playSound('dump');
-                robot.backpack = robot.backpack.filter(item => item.type !== foundCan.type);
-                newLogs.push(`[Pilah Sukses] ${robotLabel} langkah ${stepNum}: ${matchingItems.length} sampah ${foundCan.label} dibuang ke tong ${foundCan.emoji}!`);
+                character.backpack = character.backpack.filter(item => item.type !== foundCan.type);
+                newLogs.push(`[Pilah Sukses] ${characterLabel} langkah ${stepNum}: ${matchingItems.length} sampah ${foundCan.label} dibuang ke tong ${foundCan.emoji}!`);
               } else {
                 playSound('fail');
-                newLogs.push(`[Aksi] ${robotLabel} langkah ${stepNum}: Robot di atas Tong ${foundCan.label} ${foundCan.emoji} tapi tidak membawa sampah jenis ini!`);
+                newLogs.push(`[Aksi] ${characterLabel} langkah ${stepNum}: Karakter di atas Tong ${foundCan.label} ${foundCan.emoji} tapi tidak membawa sampah jenis ini!`);
               }
             } else {
               playSound('click');
-              newLogs.push(`[Perhatian] ${robotLabel} langkah ${stepNum}: Robot buang sampah di tanah kosong!`);
+              newLogs.push(`[Perhatian] ${characterLabel} langkah ${stepNum}: Karakter membuang sampah di tanah kosong!`);
             }
             break;
           }
         }
 
-        robot.playbackIndex++;
-        currentRobots[robotId] = robot;
+        character.playbackIndex++;
+        currentCharacters[characterId] = character;
       }
 
-      robotStatesRef.current = currentRobots;
+      characterStatesRef.current = currentCharacters;
       activeTrashRef.current = currentTrash;
 
-      setRobotStates(cloneRobotStates(currentRobots));
+      setCharacterStates(cloneCharacterStates(currentCharacters));
       setActiveTrash([...currentTrash]);
       if (newLogs.length > 0) {
         setLogs(prev => [...prev, ...newLogs]);
@@ -623,7 +643,7 @@ export function useArenaGame(
           setGameResult('FAILED');
           setShowResultModal(true);
         } else {
-          evaluateGameResult(cloneRobotStates(currentRobots), currentTrash);
+          evaluateGameResult(cloneCharacterStates(currentCharacters), currentTrash);
         }
       }
     }, intervalTime);
@@ -633,13 +653,13 @@ export function useArenaGame(
     };
   }, [isExecuting, execSpeed, level]);
 
-  // Total blocks programmed across all robots
-  const totalBlockCount = Object.values(robotStates).reduce((sum, r) => sum + r.instructions.length, 0);
+  // Total blocks programmed across all characters
+  const totalBlockCount = Object.values(characterStates).reduce((sum, c) => sum + c.instructions.length, 0);
 
   return {
-    activeRobot,
-    setActiveRobot,
-    robotStates,
+    activeCharacter,
+    setActiveCharacter,
+    characterStates,
     isExecuting,
     activeTrash,
     logs,
@@ -655,6 +675,7 @@ export function useArenaGame(
     totalBlockCount,
     handleAddCommand,
     handleClearInstructions,
+    handleUpdateInstructions,
     handleDeleteCommand,
     handleMoveCommandUp,
     handleMoveCommandDown,

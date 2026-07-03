@@ -5,92 +5,200 @@
 
 import React from 'react';
 import { Instruction } from '../../../types';
-import { Trash2, ChevronUp, ChevronDown } from 'lucide-react';
 
 interface InstructionBlockProps {
   instruction: Instruction;
-  onDelete: (id: string) => void;
-  onMoveUp?: () => void;
-  onMoveDown?: () => void;
   activeInstructionId?: string | null;
+  isDragged?: boolean;
+  isOutside?: boolean;
 }
 
 export default function InstructionBlock({
   instruction,
-  onDelete,
-  onMoveUp,
-  onMoveDown,
   activeInstructionId,
+  isDragged = false,
+  isOutside = false,
 }: InstructionBlockProps) {
   const isExecutingCurrent = activeInstructionId === instruction.id;
 
-  // Render visual block depending on command type
   const getBlockConfig = (type: string) => {
     switch (type) {
       case 'UP':
-        return { bg: 'bg-[#00ADEF] border-[#009CD7] text-white shadow-sm font-semibold', emoji: '⬆️', label: 'Maju' };
+        return { emoji: '⬆️', label: 'ATAS' };
       case 'DOWN':
-        return { bg: 'bg-[#00ADEF] border-[#009CD7] text-white shadow-sm font-semibold', emoji: '⬇️', label: 'Mundur' };
+        return { emoji: '⬇️', label: 'BAWAH' };
       case 'LEFT':
-        return { bg: 'bg-[#00ADEF] border-[#009CD7] text-white shadow-sm font-semibold', emoji: '⬅️', label: 'Belok Kiri' };
+        return { emoji: '⬅️', label: 'KIRI' };
       case 'RIGHT':
-        return { bg: 'bg-[#00ADEF] border-[#009CD7] text-white shadow-sm font-semibold', emoji: '➡️', label: 'Belok Kanan' };
+        return { emoji: '➡️', label: 'KANAN' };
       case 'PICK':
-        return { bg: 'bg-[#00B050] border-[#009E48] text-white shadow-sm font-bold', emoji: '👐', label: 'Ambil Sampah' };
+        return { emoji: '👐', label: 'AMBIL' };
       case 'DROP':
-        return { bg: 'bg-[#FF5252] border-[#E04040] text-white shadow-sm font-bold', emoji: '🗑️', label: 'Buang Sampah' };
+        return { emoji: '🗑️', label: 'BUANG' };
       default:
-        return { bg: 'bg-stone-200 border-stone-300 text-stone-700', emoji: '❓', label: 'Blok' };
+        return { emoji: '❓', label: 'BLOK' };
     }
   };
 
+  const getBlockColors = (type: string, isExecutingCurrent: boolean, isDragged: boolean, isOutside: boolean) => {
+    if (isDragged && isOutside) {
+      return {
+        fillColor: '#EF4444',   // red-500
+        strokeColor: '#B91C1C', // red-700
+        textColor: 'text-white font-bold',
+      };
+    }
+    if (isExecutingCurrent) {
+      return {
+        fillColor: '#FEF3C7',   // amber-100
+        strokeColor: '#F59E0B', // amber-500
+        textColor: 'text-amber-955 font-bold',
+      };
+    }
+    switch (type) {
+      case 'UP':
+      case 'DOWN':
+      case 'LEFT':
+      case 'RIGHT':
+        return {
+          fillColor: '#6d6d6d',
+          strokeColor: '#474747',
+          textColor: 'text-white font-semibold',
+        };
+      case 'PICK':
+        return {
+          fillColor: '#00b0fc',
+          strokeColor: '#3696c5',
+          textColor: 'text-white font-bold',
+        };
+      case 'DROP':
+        return {
+          fillColor: '#56cafb',
+          strokeColor: '#56afd4',
+          textColor: 'text-white font-bold',
+        };
+      default:
+        return {
+          fillColor: '#E7E5E4',   // stone-200
+          strokeColor: '#D6D3D1', // stone-300
+          textColor: 'text-stone-700',
+        };
+    }
+  };
+
+  const renderIcon = (type: string) => {
+    return (
+      <svg
+        className="w-5 h-5 sm:w-8 sm:h-8 flex-shrink-0"
+        viewBox="0 0 65.92 65.92"
+      >
+        {/* White Card Background rx="9.09" matching tombol-atas.svg */}
+        <rect x="7.46" y="5.99" width="51" height="51" rx="9.09" ry="9.09" fill="#ffffff" />
+        
+        {/* Icon Glyph Paths */}
+        {type === 'UP' && (
+          <path fill="#5b5b5b" d="M39.49,26.24h-2.34v20.31c0,.7-.56,1.26-1.26,1.26h-5.84c-.7,0-1.26-.57-1.26-1.26v-20.31h-2.34c-1.04,0-1.64-1.2-1-2.03l6.52-8.55c.51-.66,1.5-.66,2.01,0l6.52,8.55c.63.83.04,2.03-1,2.03Z"/>
+        )}
+        {type === 'DOWN' && (
+          <path fill="#5b5b5b" d="M39.49,36.74h-2.34v-20.31c0-.7-.56-1.26-1.26-1.26h-5.84c-.7,0-1.26.57-1.26,1.26v20.31h-2.34c-1.04,0-1.64,1.2-1,2.03l6.52,8.55c.51.66,1.5.66,2.01,0l6.52-8.55c.63-.83.04-2.03-1-2.03Z"/>
+        )}
+        {type === 'LEFT' && (
+          <path fill="#5b5b5b" d="M27.72,38.01v-2.34s20.31,0,20.31,0c.7,0,1.26-.56,1.26-1.26v-5.84c0-.7-.57-1.26-1.26-1.26h-20.31s0-2.34,0-2.34c0-1.04-1.2-1.64-2.03-1l-8.55,6.52c-.66.51-.66,1.5,0,2.01l8.55,6.52c.83.63,2.03.04,2.03-1Z"/>
+        )}
+        {type === 'RIGHT' && (
+          <path fill="#5b5b5b" d="M38.21,38.01v-2.34s-20.31,0-20.31,0c-.7,0-1.26-.56-1.26-1.26v-5.84c0-.7-.57-1.26,1.26-1.26h20.31s0-2.34,0-2.34c0-1.04,1.2-1.64,2.03-1l8.55,6.52c.66.51.66,1.5,0,2.01l-8.55,6.52c-.83.63-2.03.04-2.03-1Z"/>
+        )}
+        {type === 'PICK' && (
+          <g>
+            <path fill="#fdb696" d="M47.27,63.15c-3.74-1.23-29.15-17.58-23.71-22.6,4.49-4.14,14.34,7,16.05,4.25,1.79-2.87-1.69-7.3-5.45-11.16-4.86-5-17.83-11.72-16.02-14.7.96-1.58,5.46-1.19,10.32.73,1.17-1.03,2.39-1.6,3.61-1.82,3.43-3.47,6.77-3.56,9.58-2.35l-.34-.27c5.4-6.93,15.58,6.96,15.58,6.96l14.48,16.85"/>
+            <path fill="#d1704b" d="M28.33,19.77s0-.1.03-.14c.08-.2.3-.29.5-.21,3.57,1.44,8.47,4.09,11.54,8.51.12.17.08.41-.1.53-.17.12-.41.08-.53-.1-2.96-4.27-7.72-6.84-11.19-8.24-.15-.06-.24-.2-.24-.35Z"/>
+            <path fill="#d1704b" d="M31.27,17.95c0-.17.12-.33.29-.37,1.37-.34,2.86-.27,4.42.2,3.09.93,6.31,3.26,9.05,6.57.13.16.11.4-.05.54-.16.14-.4.11-.54-.05-2.65-3.19-5.74-5.44-8.68-6.33-1.43-.43-2.78-.49-4.02-.19-.21.05-.41-.07-.46-.28,0-.03-.01-.06-.01-.09Z"/>
+            <path fill="#d1704b" d="M40.44,15.19s0-.08.02-.12c.06-.2.28-.31.48-.25,4.31,1.38,7.31,5.39,8.71,7.65.11.18.06.42-.12.53-.18.11-.42.06-.53-.12-1.35-2.17-4.21-6.01-8.29-7.32-.16-.05-.27-.2-.27-.36Z"/>
+          </g>
+        )}
+        {type === 'DROP' && (
+          <g>
+            <path fill="#313a3a" d="M22.1,23.45c.21-.52-.17-1.11-.65-1.4-.48-.28-1.05-.37-1.58-.57-1.07-.41-1.88-1.3-2.6-2.19-.17-.21-.34-.43-.38-.69-.09-.52.37-1.01.89-1.14s1.05,0,1.57.12c-.29-1.24-.1-2.59.53-3.69.3-.52.7-.99,1.23-1.25.54-.26,1.22-.26,1.69.1.46.35.64.97.73,1.54.12.79.13,1.6.13,2.4.51-.8,1.25-1.44,2.11-1.84.55-.25,1.34-.34,1.65.18.2.34.09.77-.04,1.14-.36,1.01-.88,1.97-1.52,2.83-.24.32-.5.64-.62,1.03-.24.76.15,1.6.76,2.1s1.4.74,2.17.91c2.78.61,5.7.6,8.4,1.51.6.2,1.21.46,1.63.94.42.47.6,1.21.69,1.81,2.07.6,4.13,1.54,5.54,3.18,1.41,1.64,2.03,4.08,1.08,6.02,1.6-.14,3.25.37,4.49,1.39,1.24,1.02,2.07,2.54,2.12,4.5.48,1.52-.37,3.21-1.64,4.17-1.27.96-2.87,1.36-4.42,1.69-5.81,1.25-11.73,1.98-17.67,2.24-2.05.09-4.14.12-6.14-.37-2-.49-3.92-1.56-5.06-3.28-1.13-1.71-1.32-4.13-.13-5.8.21-.29.46-.57.53-.92.07-.35-.06-.7-.17-1.03-1.46-4.38-.1-9.57,3.31-12.68.47-.42.97-.82,1.29-1.37.31-.55.37-1.3.07-1.57Z"/>
+            <path fill="#5a2478" opacity=".17" d="M20.77,21.77c.24.07.47.16.68.29.48.28.86.88.65,1.4.19.17.24.53.17.91,1.16-.71,2.22-1.49,3.21-2.36-.25.17-.5.37-.75.62.25-.25.49-.45.75-.62.07-.06.15-.13.22-.2-.36-.44-.58-1.01-.5-1.56-1.31.88-2.79,1.45-4.43,1.53Z"/>
+            <path fill="#5a2478" opacity=".17" d="M28.7,23.14c-.17-.03-.34-.07-.52-.11-.77-.17-1.56-.4-2.17-.91-.1-.09-.2-.18-.28-.29-.08.05-.17.1-.25.16-.99.87-2.05,1.66-3.21,2.36-.04.22-.12.45-.24.66-.31.55-.82.95-1.29,1.37-3.16,2.87-4.55,7.52-3.59,11.67,4.53-2.76,8.12-7.17,11.58-11.44.87-.87-.17-2.28-.04-3.47Z"/>
+            <path fill="#5a2478" opacity=".17" d="M42.61,28.89c-1.08-.7-2.31-1.19-3.55-1.56-.84,4.15-2.95,6.74-6.17,9.16,2.32,1.69,7.33-.27,9.71-7.6Z"/>
+            <path fill="#5a2478" opacity=".17" d="M29.96,42.93c0-.92.24-1.93-.07-2.86-3.72,2-9.45,3.86-12.27-.14,0,.06,0,.11-.02.17-.07.35-.32.63-.53.92-1.19,1.67-1.01,4.09.13,5.8,1.13,1.71,3.06,2.79,5.06,3.28,2,.49,4.08.46,6.14.37,5.94-.26,11.86-.99,17.67-2.24,1.56-.33,3.16-.73,4.42-1.69,1.27-.96,2.12-2.65,1.64-4.17,0-.08,0-.17-.01-.25-6.27,2.75-15.25-.81-22.16.8Z"/>
+            <path fill="#0e2e2c" d="M39.05,27.31c-.03-.33-.1-.67-.22-.9-.14-.3-.37-.55-.61-.78-.07-.03-.14.07-.08.12.17.18.38.42.44.58.15.34.15.58.13.96-.04.42-.02.83-.14,1.25-.39,1.27-.76,2.11-1.43,3.25-.8,1.26-1.87,2.35-3.12,3.46-.48.41-.97.8-1.45,1.21-.07.05-.11.14-.11.22,0,.1.06.19.14.24.07.04.14.04.22.03.03,0,.06-.02.08-.04,0,0,0,0,0,0,.16-.12.33-.23.49-.35.37-.27,1.39-1.06,1.92-1.59,1.54-1.37,2.79-3.07,3.44-5.04.18-.5.33-1.05.36-1.38.04-.45-.04-.93-.06-1.25Z"/>
+            <path fill="#0e2e2c" d="M37.42,33.19c-.84,1.38-1.6,2.47-2.92,3.48-.15.14-.13.05-.22.23-.06.2.18.39.36.27.61-.44,1.21-.9,1.68-1.49.57-.74,1.12-1.52,1.53-2.35.05-.24-.32-.37-.44-.15Z"/>
+            <path fill="#0e2e2c" d="M24.43,42.3c-.09-.25-.4-.08-.67-.09-.46.04-.93.09-1.39.07-1.81.02-3.69-1.09-4.34-2.54-.2-.49-.41-.99-.55-1.5-.1-.29-.12-.63-.26-.89-.06-.03-.13.02-.11.09.27.99.38,2.05.85,2.98.98,1.67,3,2.56,4.9,2.36.54-.07.82-.1,1.3-.21.15-.02.33-.07.28-.27Z"/>
+            <path fill="#0e2e2c" d="M27.63,41.14c-.2.06-.4.11-.6.16-.49.16-1.2.24-1.58.37-.17.12-.03.41.17.35.73-.13,1.46-.26,2.15-.56.09-.05.15-.02.19-.17.02-.2-.18-.22-.33-.15Z"/>
+            <path fill="#0e2e2c" d="M45.95,34.36c-.07-.08-.22-.02-.21.09-.05.51-.13,1.06-.32,1.61-.25.62-.76,1.49-1.25,2.13-.72.93-2.03,2.33-2.99,3.02-.42.36-1.39.97-1.85,1.31-.1.11,0,.3.14.29.22-.06.64-.34.95-.52,1.23-.79,2.26-1.67,3.27-2.85,1-1.13,1.88-2.45,2.16-3.95.05-.28.09-.56.12-.84,0-.1.05-.22-.02-.3Z"/>
+            <path fill="#0e2e2c" d="M46.57,37.54c-.02-.07-.1-.1-.17-.07-.06.04-.08.11-.12.17-.88,1.32-2,2.43-3.26,3.53-.4.38-.86.68-1.26,1.05-.06.12.12.24.21.14,1.05-.8,2.02-1.69,2.95-2.62.44-.44.82-.94,1.19-1.44.16-.22.3-.44.44-.67.02-.03.02-.06.02-.09Z"/>
+          </g>
+        )}
+      </svg>
+    );
+  };
+
   const config = getBlockConfig(instruction.type);
+  const colors = getBlockColors(instruction.type, isExecutingCurrent, isDragged, isOutside);
 
   return (
     <div
-      className={`rounded-lg sm:rounded-xl border-2 flex items-center justify-between p-1 sm:p-2.5 transition-all outline-none ${
-        isExecutingCurrent
-          ? 'border-amber-500 bg-amber-50 shadow-md scale-[1.01] text-amber-950 font-bold'
-          : config.bg
-      }`}
+      className="relative z-0 flex items-center justify-between py-0.5 pl-1 pr-1.5 sm:py-1 sm:pl-2.5 sm:pr-3.5 h-7 sm:h-11 w-full bg-transparent outline-none select-none"
       id={`block-flat-${instruction.id}`}
     >
-      <div className="flex items-center gap-1 sm:gap-2 min-w-0">
-        <span className="text-[10px] sm:text-sm select-none">{config.emoji}</span>
-        <span className="font-bold text-[8px] sm:text-xs tracking-tight font-sans truncate">
-          {config.label}
-        </span>
+      {/* SVG Bubble Background (3-slice scaled to prevent distortion) */}
+      <div className="absolute inset-0 w-full h-full -z-10 pointer-events-none flex select-none overflow-hidden">
+        {/* Left Cap */}
+        <svg
+          className="h-full aspect-[20/112.65] flex-shrink-0"
+          viewBox="0 0 20 112.65"
+          preserveAspectRatio="none"
+        >
+          <path
+            fill={colors.fillColor}
+            d="M265.02,110.65c-5.37,0-9.74-4.37-9.74-9.74v-4.6c0-2.42-1.97-4.4-4.4-4.4H13c-6.07,0-11-4.93-11-11V13C2,6.93,6.93,2,13,2h236.74c.11,0,.19.09.19.19v2.84c0,8.27,6.73,15,15,15h10.07c8.27,0,15-6.73,15-15v-2.84c0-.11.09-.19.19-.19h7.63c6.07,0,11,4.93,11,11v67.91c0,6.07-4.93,11-11,11h-8.77c-2.42,0-4.4,1.97-4.4,4.4v4.6c0,5.37-4.37,9.74-9.74,9.74h-9.89Z"
+          />
+          <path
+            fill={colors.strokeColor}
+            d="M297.82,4c4.96,0,9,4.04,9,9v67.91c0,4.96-4.04,9-9,9h-8.77c-3.53,0-6.4,2.87-6.4,6.4v4.6c0,4.27-3.47,7.74-7.74,7.74h-9.89c-4.27,0-7.74-3.47-7.74-7.74v-4.6c0-3.53-2.87-6.4-6.4-6.4H13c-4.96,0-9-4.04-9-9V13c0-4.96,4.04-9,9-9h234.93v1.03c0,9.37,7.63,17,17,17h10.07c9.37,0,17-7.63,17-17v-1.03h5.82M297.82,0h-7.63c-1.21,0-2.19.98-2.19,2.19v2.84c0,7.18-5.82,13-13,13h-10.07c-7.18,0-13-5.82-13-13v-2.84c0-1.21-.98-2.19-2.19-2.19H13C5.82,0,0,5.82,0,13v67.91c0,7.18,5.82,13,13,13h237.88c1.32,0,2.4,1.07,2.4,2.4v4.6c0,6.48,5.26,11.74,11.74,11.74h9.89c6.48,0,11.74-5.26,11.74-11.74v-4.6c0-1.32,1.07-2.4,2.4-2.4h8.77c7.18,0,13-5.82,13-13V13c0-7.18-5.82-13-13-13h0Z"
+          />
+        </svg>
+
+        {/* Middle Slice */}
+        <svg
+          className="h-full flex-1"
+          viewBox="20 0 220 112.65"
+          preserveAspectRatio="none"
+        >
+          <path
+            fill={colors.fillColor}
+            d="M265.02,110.65c-5.37,0-9.74-4.37-9.74-9.74v-4.6c0-2.42-1.97-4.4-4.4-4.4H13c-6.07,0-11-4.93-11-11V13C2,6.93,6.93,2,13,2h236.74c.11,0,.19.09.19.19v2.84c0,8.27,6.73,15,15,15h10.07c8.27,0,15-6.73,15-15v-2.84c0-.11.09-.19.19-.19h7.63c6.07,0,11,4.93,11,11v67.91c0,6.07-4.93,11-11,11h-8.77c-2.42,0-4.4,1.97-4.4,4.4v4.6c0,5.37-4.37,9.74-9.74,9.74h-9.89Z"
+          />
+          <path
+            fill={colors.strokeColor}
+            d="M297.82,4c4.96,0,9,4.04,9,9v67.91c0,4.96-4.04,9-9,9h-8.77c-3.53,0-6.4,2.87-6.4,6.4v4.6c0,4.27-3.47,7.74-7.74,7.74h-9.89c-4.27,0-7.74-3.47-7.74-7.74v-4.6c0-3.53-2.87-6.4-6.4-6.4H13c-4.96,0-9-4.04-9-9V13c0-4.96,4.04-9,9-9h234.93v1.03c0,9.37,7.63,17,17,17h10.07c9.37,0,17-7.63,17-17v-1.03h5.82M297.82,0h-7.63c-1.21,0-2.19.98-2.19,2.19v2.84c0,7.18-5.82,13-13,13h-10.07c-7.18,0-13-5.82-13-13v-2.84c0-1.21-.98-2.19-2.19-2.19H13C5.82,0,0,5.82,0,13v67.91c0,7.18,5.82,13,13,13h237.88c1.32,0,2.4,1.07,2.4,2.4v4.6c0,6.48,5.26,11.74,11.74,11.74h9.89c6.48,0,11.74-5.26,11.74-11.74v-4.6c0-1.32,1.07-2.4,2.4-2.4h8.77c7.18,0,13-5.82,13-13V13c0-7.18-5.82-13-13-13h0Z"
+          />
+        </svg>
+
+        {/* Right Cap */}
+        <svg
+          className="h-full aspect-[70.82/112.65] flex-shrink-0"
+          viewBox="240 0 70.82 112.65"
+          preserveAspectRatio="none"
+        >
+          <path
+            fill={colors.fillColor}
+            d="M265.02,110.65c-5.37,0-9.74-4.37-9.74-9.74v-4.6c0-2.42-1.97-4.4-4.4-4.4H13c-6.07,0-11-4.93-11-11V13C2,6.93,6.93,2,13,2h236.74c.11,0,.19.09.19.19v2.84c0,8.27,6.73,15,15,15h10.07c8.27,0,15-6.73,15-15v-2.84c0-.11.09-.19.19-.19h7.63c6.07,0,11,4.93,11,11v67.91c0,6.07-4.93,11-11,11h-8.77c-2.42,0-4.4,1.97-4.4,4.4v4.6c0,5.37-4.37,9.74-9.74,9.74h-9.89Z"
+          />
+          <path
+            fill={colors.strokeColor}
+            d="M297.82,4c4.96,0,9,4.04,9,9v67.91c0,4.96-4.04,9-9,9h-8.77c-3.53,0-6.4,2.87-6.4,6.4v4.6c0,4.27-3.47,7.74-7.74,7.74h-9.89c-4.27,0-7.74-3.47-7.74-7.74v-4.6c0-3.53-2.87-6.4-6.4-6.4H13c-4.96,0-9-4.04-9-9V13c0-4.96,4.04-9,9-9h234.93v1.03c0,9.37,7.63,17,17,17h10.07c9.37,0,17-7.63,17-17v-1.03h5.82M297.82,0h-7.63c-1.21,0-2.19.98-2.19,2.19v2.84c0,7.18-5.82,13-13,13h-10.07c-7.18,0-13-5.82-13-13v-2.84c0-1.21-.98-2.19-2.19-2.19H13C5.82,0,0,5.82,0,13v67.91c0,7.18,5.82,13,13,13h237.88c1.32,0,2.4,1.07,2.4,2.4v4.6c0,6.48,5.26,11.74,11.74,11.74h9.89c6.48,0,11.74-5.26,11.74-11.74v-4.6c0-1.32,1.07-2.4,2.4-2.4h8.77c7.18,0,13-5.82,13-13V13c0-7.18-5.82-13-13-13h0Z"
+          />
+        </svg>
       </div>
 
-      <div className="flex items-center gap-0.5 sm:gap-1 opacity-90 flex-shrink-0">
-        {onMoveUp && (
-          <button
-            type="button"
-            onClick={onMoveUp}
-            className="p-0.5 sm:p-1 hover:bg-white/10 rounded cursor-pointer text-current"
-            title="Pindah Ke Atas"
-          >
-            <ChevronUp className="w-2.5 h-2.5 sm:w-3.5 sm:h-3.5" />
-          </button>
-        )}
-        {onMoveDown && (
-          <button
-            type="button"
-            onClick={onMoveDown}
-            className="p-0.5 sm:p-1 hover:bg-white/10 rounded cursor-pointer text-current"
-            title="Pindah Ke Bawah"
-          >
-            <ChevronDown className="w-2.5 h-2.5 sm:w-3.5 sm:h-3.5" />
-          </button>
-        )}
-        <button
-          type="button"
-          onClick={() => onDelete(instruction.id)}
-          className="p-0.5 sm:p-1 hover:bg-white/15 hover:text-red-200 transition-colors rounded cursor-pointer ml-0.5 sm:ml-1 text-current"
-          title="Hapus Perintah"
-        >
-          <Trash2 className="w-2.5 h-2.5 sm:w-3.5 sm:h-3.5" />
-        </button>
+      <div className={`flex items-center gap-1.5 sm:gap-3.5 z-10 ${colors.textColor}`}>
+        {renderIcon(instruction.type)}
+        <span className="font-extrabold text-[9px] sm:text-sm tracking-tight font-mono">
+          {config.label}
+        </span>
       </div>
     </div>
   );

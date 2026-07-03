@@ -17,7 +17,7 @@ interface SplashProps {
 export default function Splash({ onStart, isMuted, onToggleMute, onShowHowToPlay }: SplashProps) {
   return (
     <div className="relative max-h-screen h-screen w-full flex flex-col items-center justify-center p-6 text-center overflow-hidden bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-[#FCDCB5]/10 via-[#FEF8F0] to-[#FEF8F0] selection:bg-indigo-500/30 font-sans leading-relaxed">
-      {/* Pusbuk Logo on Absolute Top Left - Responsive Size */}
+      {/* Pusbuk Logo on Absolute Top Left */}
       <div className="absolute top-3 left-3 sm:top-5 sm:left-5 z-50 shrink-0 animate-fade-in">
         <img 
           src={logoPusbuk} 
@@ -26,7 +26,7 @@ export default function Splash({ onStart, isMuted, onToggleMute, onShowHowToPlay
         />
       </div>
 
-      {/* Top Right Controls */}
+      {/* Top Right Controls (Panduan & Sound) */}
       <div className="absolute top-6 right-6 flex items-center gap-2 animate-fade-in">
         <button
           onClick={onToggleMute}
@@ -50,24 +50,18 @@ export default function Splash({ onStart, isMuted, onToggleMute, onShowHowToPlay
 
       {/* Centered Splash Hero Panel */}
       <div className="z-10 max-w-xl flex flex-col items-center">
-        {/* Tech Badge */}
-        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-[#FCDCB5]/30 border border-[#E9BE91]/40 rounded-full text-[11px] sm:text-xs font-bold text-amber-950 mb-6 uppercase tracking-widest animate-scale-up">
-          <span className="w-2 h-2 rounded-full bg-[#00ADEF] animate-pulse"></span>
-          Computational Thinking Puzzle
-        </div>
-
         {/* Heading */}
-        <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight text-amber-950 leading-tight mb-5 animate-scale-up" style={{ animationDelay: '100ms' }}>
+        <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight text-amber-950 leading-tight mb-5 animate-scale-up">
           Pilah Sampah,<br className="sm:hidden" /> Kuasai Logika!
         </h1>
 
-        {/* Subtext description */}
-        <p className="text-xs sm:text-sm md:text-base text-gray-500 max-w-md sm:max-w-lg leading-relaxed mb-8 px-4 animate-scale-up" style={{ animationDelay: '200ms' }}>
-          Bantu robot pintar Sorter membersihkan taman kota. Rancang urutan algoritme gerakan, ambil sampah organik/anorganik, dan pilah ke wadah yang serasi untuk menguji keterampilan logika Anda!
+        {/* Shorter Subtext description */}
+        <p className="text-xs sm:text-sm md:text-base text-gray-500 max-w-md sm:max-w-lg leading-relaxed mb-8 px-4 animate-scale-up" style={{ animationDelay: '100ms' }}>
+          Rancang algoritme gerakan petugas kebersihan untuk mengambil dan memilah sampah sesuai wadah yang cocok.
         </p>
 
         {/* Start Button */}
-        <div className="animate-scale-up" style={{ animationDelay: '300ms' }}>
+        <div className="animate-scale-up" style={{ animationDelay: '200ms' }}>
           <button
             onClick={onStart}
             className="px-8 py-4 bg-[#00ADEF] hover:bg-[#009CD7] border border-[#009CD7] text-white font-bold text-sm sm:text-base rounded-2xl cursor-pointer shadow-lg active:scale-98 hover:scale-[1.02] transition-all flex items-center gap-2"
@@ -75,11 +69,6 @@ export default function Splash({ onStart, isMuted, onToggleMute, onShowHowToPlay
             Mulai Petualangan <ArrowRight className="w-5 h-5 animate-bounce-horizontal" />
           </button>
         </div>
-      </div>
-
-      {/* Decorative Bottom Slogan */}
-      <div className="absolute bottom-6 text-[10px] sm:text-xs text-gray-400 font-mono animate-fade-in tracking-wider select-none">
-        KATEGORI: SAINS KOMPUTER • ALGORITME • ABSTRAKSI
       </div>
     </div>
   );
