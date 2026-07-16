@@ -115,39 +115,23 @@ export default function Arena({
       return actions.map(act => ({ id: Math.random().toString(36).substring(2, 9), type: act }));
     };
 
-    let organicActions: CommandAction[] = [];
-    let recyclableActions: CommandAction[] = [];
-    let b3Actions: CommandAction[] = [];
+    let actions: CommandAction[] = [];
 
     if (levelId === 1) {
-      organicActions = ['RIGHT', 'RIGHT', 'DOWN', 'PICK', 'UP', 'RIGHT', 'RIGHT', 'RIGHT', 'RIGHT', 'RIGHT', 'DROP'];
-      recyclableActions = ['RIGHT', 'RIGHT', 'RIGHT', 'RIGHT', 'UP', 'PICK', 'DOWN', 'RIGHT', 'RIGHT', 'RIGHT', 'DROP'];
-      b3Actions = ['RIGHT', 'RIGHT', 'RIGHT', 'UP', 'UP', 'UP', 'RIGHT', 'RIGHT', 'RIGHT', 'PICK', 'DOWN', 'DOWN', 'DOWN', 'RIGHT', 'DROP'];
+      actions = ['RIGHT', 'RIGHT', 'RIGHT', 'PICK', 'RIGHT', 'RIGHT', 'RIGHT', 'PICK', 'RIGHT', 'RIGHT', 'RIGHT', 'RIGHT', 'RIGHT', 'DROP', 'UP', 'UP', 'DROP'];
     } else if (levelId === 2) {
-      organicActions = ['RIGHT', 'RIGHT', 'PICK', 'RIGHT', 'RIGHT', 'RIGHT', 'RIGHT', 'RIGHT', 'DROP'];
-      recyclableActions = ['RIGHT', 'RIGHT', 'RIGHT', 'RIGHT', 'PICK', 'RIGHT', 'RIGHT', 'RIGHT', 'DROP'];
-      b3Actions = ['RIGHT', 'RIGHT', 'RIGHT', 'RIGHT', 'RIGHT', 'PICK', 'RIGHT', 'RIGHT', 'DROP'];
+      actions = ['UP', 'UP', 'RIGHT', 'RIGHT', 'RIGHT', 'RIGHT', 'PICK', 'DOWN', 'DOWN', 'DOWN', 'DOWN', 'RIGHT', 'RIGHT', 'RIGHT', 'PICK', 'UP', 'UP', 'RIGHT', 'RIGHT', 'RIGHT', 'RIGHT', 'DROP', 'UP', 'UP', 'DROP'];
     } else if (levelId === 3) {
-      organicActions = ['RIGHT', 'RIGHT', 'UP', 'PICK', 'DOWN', 'RIGHT', 'RIGHT', 'RIGHT', 'PICK', 'RIGHT', 'RIGHT', 'DROP'];
-      recyclableActions = ['RIGHT', 'RIGHT', 'PICK', 'RIGHT', 'RIGHT', 'RIGHT', 'DOWN', 'DOWN', 'PICK', 'UP', 'UP', 'RIGHT', 'RIGHT', 'DROP'];
-      b3Actions = ['UP', 'DOWN', 'RIGHT', 'RIGHT', 'UP', 'PICK', 'DOWN', 'RIGHT', 'RIGHT', 'RIGHT', 'RIGHT', 'RIGHT', 'DROP'];
+      actions = ['UP', 'UP', 'RIGHT', 'RIGHT', 'RIGHT', 'PICK', 'DOWN', 'DOWN', 'RIGHT', 'RIGHT', 'RIGHT', 'PICK', 'DOWN', 'DOWN', 'RIGHT', 'RIGHT', 'RIGHT', 'PICK', 'RIGHT', 'RIGHT', 'DROP', 'UP', 'UP', 'DROP', 'UP', 'UP', 'DROP'];
     } else if (levelId === 4) {
-      organicActions = ['RIGHT', 'DOWN', 'DOWN', 'DOWN', 'DOWN', 'PICK', 'UP', 'UP', 'RIGHT', 'RIGHT', 'RIGHT', 'RIGHT', 'PICK', 'UP', 'UP', 'RIGHT', 'RIGHT', 'DROP'];
-      recyclableActions = ['RIGHT', 'RIGHT', 'PICK', 'RIGHT', 'UP', 'UP', 'PICK', 'RIGHT', 'UP', 'PICK', 'DOWN', 'DOWN', 'DOWN', 'RIGHT', 'RIGHT', 'RIGHT', 'DROP'];
-      b3Actions = ['RIGHT', 'RIGHT', 'RIGHT', 'RIGHT', 'RIGHT', 'PICK', 'RIGHT', 'RIGHT', 'DROP'];
+      actions = ['UP', 'UP', 'RIGHT', 'RIGHT', 'PICK', 'RIGHT', 'RIGHT', 'PICK', 'DOWN', 'DOWN', 'RIGHT', 'RIGHT', 'PICK', 'RIGHT', 'RIGHT', 'RIGHT', 'RIGHT', 'RIGHT', 'UP', 'UP', 'DROP', 'DOWN', 'DOWN', 'DROP', 'LEFT', 'LEFT', 'LEFT', 'DOWN', 'DOWN', 'PICK', 'RIGHT', 'RIGHT', 'RIGHT', 'DROP'];
     } else if (levelId === 5) {
-      organicActions = ['RIGHT', 'RIGHT', 'UP', 'PICK', 'DOWN', 'DOWN', 'DOWN', 'DOWN', 'DOWN', 'PICK', 'UP', 'UP', 'UP', 'UP', 'RIGHT', 'RIGHT', 'RIGHT', 'RIGHT', 'RIGHT', 'DROP'];
-      recyclableActions = ['RIGHT', 'RIGHT', 'RIGHT', 'RIGHT', 'RIGHT', 'UP', 'UP', 'UP', 'PICK', 'DOWN', 'DOWN', 'DOWN', 'DOWN', 'DOWN', 'DOWN', 'PICK', 'UP', 'UP', 'UP', 'RIGHT', 'RIGHT', 'DROP'];
-      b3Actions = ['RIGHT', 'RIGHT', 'UP', 'UP', 'PICK', 'DOWN', 'RIGHT', 'RIGHT', 'RIGHT', 'PICK', 'DOWN', 'RIGHT', 'RIGHT', 'DROP'];
+      actions = ['UP', 'UP', 'RIGHT', 'RIGHT', 'RIGHT', 'PICK', 'DOWN', 'DOWN', 'RIGHT', 'RIGHT', 'RIGHT', 'DOWN', 'PICK', 'UP', 'UP', 'UP', 'RIGHT', 'RIGHT', 'RIGHT', 'PICK', 'RIGHT', 'RIGHT', 'DROP', 'DOWN', 'DOWN', 'DROP', 'DOWN', 'DOWN', 'DROP'];
     } else if (levelId === 6) {
-      organicActions = ['RIGHT', 'RIGHT', 'UP', 'PICK', 'DOWN', 'DOWN', 'DOWN', 'PICK', 'UP', 'UP', 'RIGHT', 'RIGHT', 'RIGHT', 'RIGHT', 'RIGHT', 'DROP'];
-      recyclableActions = ['RIGHT', 'RIGHT', 'RIGHT', 'RIGHT', 'RIGHT', 'UP', 'UP', 'PICK', 'DOWN', 'DOWN', 'PICK', 'RIGHT', 'RIGHT', 'DROP'];
-      b3Actions = ['RIGHT', 'RIGHT', 'RIGHT', 'PICK', 'RIGHT', 'RIGHT', 'PICK', 'RIGHT', 'RIGHT', 'DROP'];
+      actions = ['UP', 'UP', 'RIGHT', 'RIGHT', 'PICK', 'DOWN', 'DOWN', 'DOWN', 'RIGHT', 'PICK', 'UP', 'UP', 'UP', 'RIGHT', 'PICK', 'RIGHT', 'RIGHT', 'RIGHT', 'RIGHT', 'RIGHT', 'RIGHT', 'RIGHT', 'DROP', 'DOWN', 'DOWN', 'DROP', 'LEFT', 'LEFT', 'LEFT', 'DOWN', 'PICK', 'LEFT', 'LEFT', 'LEFT', 'PICK', 'UP', 'UP', 'UP', 'RIGHT', 'RIGHT', 'RIGHT', 'PICK', 'RIGHT', 'RIGHT', 'RIGHT', 'DOWN', 'DOWN', 'DROP', 'DOWN', 'DOWN', 'DROP'];
     }
 
-    handleUpdateInstructions('ORGANIC', createInstructions(organicActions));
-    handleUpdateInstructions('RECYCLABLE', createInstructions(recyclableActions));
-    handleUpdateInstructions('B3', createInstructions(b3Actions));
+    handleUpdateInstructions('ORGANIC', createInstructions(actions));
   };
 
   return (
@@ -164,51 +148,48 @@ export default function Arena({
       </button>
 
       {/* Main Core Layout Body */}
-      <main className="flex-1 max-w-7xl w-full mx-auto p-2 flex flex-col min-h-0">
-        {/* Main Grid: Canvas responsive */}
-        <div className="flex-1 grid grid-cols-12 gap-2 min-h-0">
-          {/* Left workspace: Command builder */}
-          <div className="col-span-5 flex flex-col min-h-0" id="left-workspace">
-            <CommandPanel
-              level={level}
-              activeCharacter={activeCharacter}
-              instructions={characterStates[activeCharacter]?.instructions || []}
-              onUpdateInstructions={(updated) => handleUpdateInstructions(activeCharacter, updated)}
-              onAddCommand={handleAddCommand}
-              onClearInstructions={handleClearInstructions}
-              onDeleteCommand={handleDeleteCommand}
-              onMoveCommandUp={handleMoveCommandUp}
-              onMoveCommandDown={handleMoveCommandDown}
-              onSelectCharacter={setActiveCharacter}
-              isExecuting={isExecuting}
-              onStartExecution={handleStartExecution}
-              onStopExecution={handleStopExecution}
-              activeInstructionId={characterStates[activeCharacter]?.activeInstructionId || null}
-              execSpeed={execSpeed}
-              onSetExecSpeed={setExecSpeed}
-              onReset={handleReset}
-              totalBlockCount={totalBlockCount}
-              characterBlocksCount={{
-                ORGANIC: characterStates.ORGANIC?.instructions.length || 0,
-                RECYCLABLE: characterStates.RECYCLABLE?.instructions.length || 0,
-                B3: characterStates.B3?.instructions.length || 0,
-              }}
-            />
-          </div>
+      <main className="flex-1 max-w-7xl w-full mx-auto p-2 flex flex-col gap-2 min-h-0">
+        {/* Top workspace: Canvas map */}
+        <div className="h-[46%] flex flex-col min-h-0" id="top-workspace">
+          <GridMap
+            width={level.gridSize.width}
+            height={level.gridSize.height}
+            characters={characterRenderData}
+            trashItems={activeTrash}
+            trashCans={level.trashCans}
+            obstacles={level.obstacles}
+            isExecuting={isExecuting}
+            onShowHints={() => { playSound('click'); setShowHintsModal(true); }}
+          />
+        </div>
 
-          {/* Right workspace: Canvas map */}
-          <div className="col-span-7 flex flex-col min-h-0" id="right-workspace">
-            <GridMap
-              width={level.gridSize.width}
-              height={level.gridSize.height}
-              characters={characterRenderData}
-              trashItems={activeTrash}
-              trashCans={level.trashCans}
-              obstacles={level.obstacles}
-              isExecuting={isExecuting}
-              onShowHints={() => { playSound('click'); setShowHintsModal(true); }}
-            />
-          </div>
+        {/* Bottom workspace: Command builder */}
+        <div className="h-[54%] flex flex-col min-h-0" id="bottom-workspace">
+          <CommandPanel
+            level={level}
+            activeCharacter={activeCharacter}
+            instructions={characterStates[activeCharacter]?.instructions || []}
+            onUpdateInstructions={(updated) => handleUpdateInstructions(activeCharacter, updated)}
+            onAddCommand={handleAddCommand}
+            onClearInstructions={handleClearInstructions}
+            onDeleteCommand={handleDeleteCommand}
+            onMoveCommandUp={handleMoveCommandUp}
+            onMoveCommandDown={handleMoveCommandDown}
+            onSelectCharacter={setActiveCharacter}
+            isExecuting={isExecuting}
+            onStartExecution={handleStartExecution}
+            onStopExecution={handleStopExecution}
+            activeInstructionId={characterStates[activeCharacter]?.activeInstructionId || null}
+            execSpeed={execSpeed}
+            onSetExecSpeed={setExecSpeed}
+            onReset={handleReset}
+            totalBlockCount={totalBlockCount}
+            characterBlocksCount={{
+              ORGANIC: characterStates.ORGANIC?.instructions.length || 0,
+              RECYCLABLE: characterStates.RECYCLABLE?.instructions.length || 0,
+              B3: characterStates.B3?.instructions.length || 0,
+            }}
+          />
         </div>
       </main>
 
@@ -306,11 +287,11 @@ export default function Arena({
                   {/* Character starting position info */}
                   <div className="pt-2 border-t border-[#EED4B7]/40 space-y-1.5 mt-auto">
                     <span className="font-bold text-indigo-700 text-[10px] tracking-wider uppercase font-mono">🧹 Posisi Mulai Karakter</span>
-                    <div className="grid grid-cols-3 gap-2">
+                    <div className="flex justify-center gap-2">
                       {level.characters?.map(r => {
                         const img = CHARACTER_IMAGES[r.id];
                         return (
-                          <div key={r.id} className="flex flex-col items-center p-1.5 bg-white border border-[#EED4B7]/40 rounded-xl text-center">
+                          <div key={r.id} className="flex flex-col items-center p-2 bg-white border border-[#EED4B7]/40 rounded-xl text-center w-24">
                             <img src={img} alt={r.name} className="w-6 h-6 object-contain mb-1" />
                             <span className="font-extrabold text-[9px] text-stone-700">{r.name}</span>
                             <span className="text-[9px] text-stone-500 font-mono">({r.startPos.x}, {r.startPos.y})</span>

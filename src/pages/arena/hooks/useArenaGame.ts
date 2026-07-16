@@ -90,9 +90,7 @@ export function useArenaGame(
 
   // Initialize level upon load
   const getCharacterLabel = (id: CharacterId) => {
-    if (id === 'ORGANIC') return 'Organik';
-    if (id === 'RECYCLABLE') return 'Daur Ulang';
-    return 'B3';
+    return 'Robot Pemilah';
   };
 
   useEffect(() => {
@@ -104,8 +102,8 @@ export function useArenaGame(
     activeTrashRef.current = trash;
     setLogs([
       `[Sistem] Memuat Level ${level.id}: ${level.name}`,
-      `[Sistem] 3 Karakter siap: Organik 🧹, Daur Ulang 🎒, B3 🗑️`,
-      `[Sistem] Klik tab karakter untuk berganti, susun program masing-masing.`
+      `[Sistem] Robot Pemilah siap! 🤖`,
+      `[Sistem] Susun program untuk mengendalikan robot.`
     ]);
     setGameResult(null);
     setShowResultModal(false);
@@ -294,7 +292,7 @@ export function useArenaGame(
     const totalCmds = Object.values(newCharacters).reduce((s, c) => s + c.compiledSteps.length, 0);
     setLogs([
       `[Sistem] Memulai simulasi...`,
-      `[Sistem] Total ${Object.keys(newCharacters).length} karakter, ${totalCmds} langkah terkompilasi.`
+      `[Sistem] Robot Pemilah: ${totalCmds} langkah terkompilasi.`
     ]);
   };
 
@@ -334,8 +332,8 @@ export function useArenaGame(
     setGameResult(null);
     setShowResultModal(false);
     setLogs([
-      `[Sistem] Reset: Simulasi diatur ulang & semua program dikosongkan.`,
-      `[Sistem] Klik tab karakter untuk menyusun program.`
+      `[Sistem] Reset: Simulasi diatur ulang & program dikosongkan.`,
+      `[Sistem] Susun program untuk menyusun langkah Robot Pemilah.`
     ]);
   };
 
@@ -579,7 +577,7 @@ export function useArenaGame(
 
           case 'PICK': {
             const foundIdx = currentTrash.findIndex(
-              t => t.pos.x === character.pos.x && t.pos.y === character.pos.y && !t.collected && t.item.type === characterId
+              t => t.pos.x === character.pos.x && t.pos.y === character.pos.y && !t.collected
             );
             if (foundIdx !== -1) {
               const targetTrash = currentTrash[foundIdx];

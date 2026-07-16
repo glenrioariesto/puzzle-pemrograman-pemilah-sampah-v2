@@ -359,38 +359,40 @@ export default function CommandPanel({
         {/* Right side instruction stack column */}
         <div className="col-span-8 flex flex-col bg-[#FEF8F0] rounded-xl sm:rounded-2xl border border-[#E9BE91]/70 p-1 md:p-2 relative shadow-inner" id="program-stack-container">
           {/* Character Selector Tabs — above the program stack */}
-          <div className="flex gap-1 sm:gap-2 mb-1.5 sm:mb-3" id="character-selector-tabs">
-            {(level.characters || []).map((character) => {
-              const meta = CHARACTER_META[character.id];
-              const isActive = activeCharacter === character.id;
-              const blockCountForChar = characterBlocksCount[character.id] || 0;
-              return (
-                <button
-                  key={character.id}
-                  type="button"
-                  onClick={() => onSelectCharacter(character.id)}
-                  disabled={isExecuting}
-                  className={`relative flex-1 flex items-center justify-center gap-1.5 sm:gap-2 px-1.5 md:px-2 py-1.5 md:py-2 rounded-lg sm:rounded-xl text-[9px] sm:text-xs font-bold font-mono border transition-all cursor-pointer ${
-                    isActive
-                      ? `${meta.activeBgClass} ${meta.borderClass} scale-105 shadow-inner`
-                      : `${meta.bgClass} ${meta.borderClass} opacity-75 hover:opacity-100`
-                  } ${isExecuting ? 'opacity-40 cursor-not-allowed' : ''}`}
-                  id={`character-tab-${character.id}`}
-                >
-                  <img
-                    src={meta.image}
-                    alt={meta.label}
-                    className="h-8 sm:h-10 w-auto object-contain flex-shrink-0"
-                  />
-                  {blockCountForChar > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-indigo-600 text-white text-[8px] sm:text-[9px] min-w-[14px] sm:min-w-[16px] h-3.5 sm:h-4 px-1 rounded-full flex items-center justify-center font-extrabold border border-white shadow-sm">
-                      {blockCountForChar}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
+          {(level.characters || []).length > 1 && (
+            <div className="flex gap-1 sm:gap-2 mb-1.5 sm:mb-3" id="character-selector-tabs">
+              {(level.characters || []).map((character) => {
+                const meta = CHARACTER_META[character.id];
+                const isActive = activeCharacter === character.id;
+                const blockCountForChar = characterBlocksCount[character.id] || 0;
+                return (
+                  <button
+                    key={character.id}
+                    type="button"
+                    onClick={() => onSelectCharacter(character.id)}
+                    disabled={isExecuting}
+                    className={`relative flex-1 flex items-center justify-center gap-1.5 sm:gap-2 px-1.5 md:px-2 py-1.5 md:py-2 rounded-lg sm:rounded-xl text-[9px] sm:text-xs font-bold font-mono border transition-all cursor-pointer ${
+                      isActive
+                        ? `${meta.activeBgClass} ${meta.borderClass} scale-105 shadow-inner`
+                        : `${meta.bgClass} ${meta.borderClass} opacity-75 hover:opacity-100`
+                    } ${isExecuting ? 'opacity-40 cursor-not-allowed' : ''}`}
+                    id={`character-tab-${character.id}`}
+                  >
+                    <img
+                      src={meta.image}
+                      alt={meta.label}
+                      className="h-8 sm:h-10 w-auto object-contain flex-shrink-0"
+                    />
+                    {blockCountForChar > 0 && (
+                      <span className="absolute -top-1 -right-1 bg-indigo-600 text-white text-[8px] sm:text-[9px] min-w-[14px] sm:min-w-[16px] h-3.5 sm:h-4 px-1 rounded-full flex items-center justify-center font-extrabold border border-white shadow-sm">
+                        {blockCountForChar}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          )}
 
           <div 
             ref={containerRef}
@@ -454,7 +456,7 @@ export default function CommandPanel({
           <div className="mt-0.5 md:mt-4 pt-0.5 md:pt-3 border-t border-[#EED4B7] flex flex-col items-stretch gap-1 md:gap-2 w-full min-w-0">
             {/* Blok badge */}
             <div className="flex flex-col sm:flex-col md:flex-row md:items-center gap-0 md:gap-1 bg-white border border-[#EED4B7] px-1.5 sm:px-2.5 py-0.5 rounded-md sm:rounded-lg shadow-sm w-full md:w-auto min-w-0">
-              <span className="text-[7px] sm:text-[9px] text-amber-900/85 uppercase font-mono tracking-widest font-bold whitespace-nowrap">Total Blok (3 Karakter)</span>
+              <span className="text-[7px] sm:text-[9px] text-amber-900/85 uppercase font-mono tracking-widest font-bold whitespace-nowrap">Total Blok</span>
               <span className={`text-[10px] sm:text-[12px] font-mono font-extrabold ${isOverBlockLimit ? 'text-rose-600 font-black animate-pulse' : 'text-amber-955'}`}>
                 {blockCount}/{level.maxInstructions}
               </span>

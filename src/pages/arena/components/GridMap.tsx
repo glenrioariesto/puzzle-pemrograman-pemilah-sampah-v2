@@ -62,7 +62,7 @@ const CHARACTER_COLORS: Record<CharacterId, { bg: string; border: string; eye: s
     bg: '#10B981', // emerald-500
     border: '#047857', // emerald-700
     eye: '#ffffff',
-    label: 'Organik',
+    label: 'Robot Pemilah',
   },
   RECYCLABLE: {
     bg: '#F59E0B', // amber-500
@@ -718,7 +718,7 @@ export default function GridMap({
                 </div>
               );
             })}
-            {totalBackpack > 0 && (
+            {characters.length > 1 && totalBackpack > 0 && (
               <div className="text-[8px] text-stone-500 font-mono text-right border-t border-[#EED4B7]/50 pt-1 mt-0.5">
                 Total: {totalBackpack}/{totalCapacity}
               </div>
