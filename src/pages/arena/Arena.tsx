@@ -10,6 +10,7 @@ import { GameLevel, LevelHighScore, CharacterId, CommandAction, Instruction } fr
 import GridMap, { CharacterRenderData } from './components/GridMap';
 import CommandPanel from './components/CommandPanel';
 import RotateDevicePrompt from './components/RotateDevicePrompt';
+import Toast from './components/Toast';
 
 // Import custom hook
 import { useArenaGame } from './hooks/useArenaGame';
@@ -83,12 +84,26 @@ export default function Arena({
   } = useArenaGame(level, isMuted, onSaveHighScore);
 
   const [activeHintSlide, setActiveHintSlide] = React.useState(0);
+  const [toastMessage, setToastMessage] = React.useState<string | null>(null);
+  const lastBlockCountRef = React.useRef(totalBlockCount);
 
   React.useEffect(() => {
     if (showHintsModal) {
       setActiveHintSlide(0);
     }
   }, [showHintsModal]);
+
+  React.useEffect(() => {
+    const isOverLimit = level.maxInstructions ? totalBlockCount > level.maxInstructions : false;
+    if (isOverLimit) {
+      if (totalBlockCount > lastBlockCountRef.current || !toastMessage) {
+        setToastMessage(`Blok kode melebihi kapasitas (${level.maxInstructions})! Hapus beberapa blok.`);
+      }
+    } else {
+      setToastMessage(null);
+    }
+    lastBlockCountRef.current = totalBlockCount;
+  }, [totalBlockCount, level.maxInstructions, toastMessage]);
 
   // Build render data for GridMap
   const characterRenderData: CharacterRenderData[] = (level.characters || []).map(character => {
@@ -118,17 +133,17 @@ export default function Arena({
     let actions: CommandAction[] = [];
 
     if (levelId === 1) {
-      actions = ['RIGHT', 'RIGHT', 'RIGHT', 'PICK', 'RIGHT', 'RIGHT', 'RIGHT', 'PICK', 'RIGHT', 'RIGHT', 'RIGHT', 'RIGHT', 'RIGHT', 'DROP', 'UP', 'UP', 'DROP'];
+      actions = ['RIGHT', 'RIGHT', 'RIGHT', 'RIGHT', 'PICK', 'RIGHT', 'RIGHT', 'RIGHT', 'RIGHT', 'PICK', 'RIGHT', 'RIGHT', 'RIGHT', 'RIGHT', 'RIGHT', 'RIGHT', 'DROP', 'LEFT', 'DROP'];
     } else if (levelId === 2) {
-      actions = ['UP', 'UP', 'RIGHT', 'RIGHT', 'RIGHT', 'RIGHT', 'PICK', 'DOWN', 'DOWN', 'DOWN', 'DOWN', 'RIGHT', 'RIGHT', 'RIGHT', 'PICK', 'UP', 'UP', 'RIGHT', 'RIGHT', 'RIGHT', 'RIGHT', 'DROP', 'UP', 'UP', 'DROP'];
+      actions = ['RIGHT', 'RIGHT', 'RIGHT', 'RIGHT', 'PICK', 'RIGHT', 'UP', 'RIGHT', 'PICK', 'RIGHT', 'UP', 'RIGHT', 'RIGHT', 'RIGHT', 'DROP', 'LEFT', 'DROP'];
     } else if (levelId === 3) {
-      actions = ['UP', 'UP', 'RIGHT', 'RIGHT', 'RIGHT', 'PICK', 'DOWN', 'DOWN', 'RIGHT', 'RIGHT', 'RIGHT', 'PICK', 'DOWN', 'DOWN', 'RIGHT', 'RIGHT', 'RIGHT', 'PICK', 'RIGHT', 'RIGHT', 'DROP', 'UP', 'UP', 'DROP', 'UP', 'UP', 'DROP'];
+      actions = ['RIGHT', 'RIGHT', 'RIGHT', 'PICK', 'RIGHT', 'RIGHT', 'RIGHT', 'RIGHT', 'PICK', 'RIGHT', 'RIGHT', 'RIGHT', 'RIGHT', 'PICK', 'RIGHT', 'RIGHT', 'RIGHT', 'RIGHT', 'DROP', 'LEFT', 'DROP', 'LEFT', 'DROP'];
     } else if (levelId === 4) {
-      actions = ['UP', 'UP', 'RIGHT', 'RIGHT', 'PICK', 'RIGHT', 'RIGHT', 'PICK', 'DOWN', 'DOWN', 'RIGHT', 'RIGHT', 'PICK', 'RIGHT', 'RIGHT', 'RIGHT', 'RIGHT', 'RIGHT', 'UP', 'UP', 'DROP', 'DOWN', 'DOWN', 'DROP', 'LEFT', 'LEFT', 'LEFT', 'DOWN', 'DOWN', 'PICK', 'RIGHT', 'RIGHT', 'RIGHT', 'DROP'];
+      actions = ['RIGHT', 'RIGHT', 'RIGHT', 'PICK', 'RIGHT', 'RIGHT', 'PICK', 'RIGHT', 'RIGHT', 'PICK', 'RIGHT', 'RIGHT', 'RIGHT', 'RIGHT', 'RIGHT', 'RIGHT', 'DROP', 'LEFT', 'DROP', 'DROP', 'LEFT', 'LEFT', 'LEFT', 'PICK', 'RIGHT', 'RIGHT', 'RIGHT', 'RIGHT', 'DROP'];
     } else if (levelId === 5) {
-      actions = ['UP', 'UP', 'RIGHT', 'RIGHT', 'RIGHT', 'PICK', 'DOWN', 'DOWN', 'RIGHT', 'RIGHT', 'RIGHT', 'DOWN', 'PICK', 'UP', 'UP', 'UP', 'RIGHT', 'RIGHT', 'RIGHT', 'PICK', 'RIGHT', 'RIGHT', 'DROP', 'DOWN', 'DOWN', 'DROP', 'DOWN', 'DOWN', 'DROP'];
+      actions = ['RIGHT', 'RIGHT', 'RIGHT', 'PICK', 'RIGHT', 'UP', 'RIGHT', 'PICK', 'RIGHT', 'UP', 'RIGHT', 'PICK', 'RIGHT', 'RIGHT', 'RIGHT', 'RIGHT', 'DROP', 'LEFT', 'DROP', 'LEFT', 'DROP'];
     } else if (levelId === 6) {
-      actions = ['UP', 'UP', 'RIGHT', 'RIGHT', 'PICK', 'DOWN', 'DOWN', 'DOWN', 'RIGHT', 'PICK', 'UP', 'UP', 'UP', 'RIGHT', 'PICK', 'RIGHT', 'RIGHT', 'RIGHT', 'RIGHT', 'RIGHT', 'RIGHT', 'RIGHT', 'DROP', 'DOWN', 'DOWN', 'DROP', 'LEFT', 'LEFT', 'LEFT', 'DOWN', 'PICK', 'LEFT', 'LEFT', 'LEFT', 'PICK', 'UP', 'UP', 'UP', 'RIGHT', 'RIGHT', 'RIGHT', 'PICK', 'RIGHT', 'RIGHT', 'RIGHT', 'DOWN', 'DOWN', 'DROP', 'DOWN', 'DOWN', 'DROP'];
+      actions = ['RIGHT', 'RIGHT', 'PICK', 'RIGHT', 'PICK', 'RIGHT', 'PICK', 'RIGHT', 'UP', 'RIGHT', 'RIGHT', 'RIGHT', 'RIGHT', 'RIGHT', 'RIGHT', 'RIGHT', 'DROP', 'LEFT', 'DROP', 'DROP', 'LEFT', 'UP', 'LEFT', 'PICK', 'LEFT', 'PICK', 'LEFT', 'LEFT', 'LEFT', 'PICK', 'RIGHT', 'UP', 'RIGHT', 'RIGHT', 'RIGHT', 'RIGHT', 'RIGHT', 'RIGHT', 'RIGHT', 'DROP', 'DROP', 'LEFT', 'DROP'];
     }
 
     handleUpdateInstructions('ORGANIC', createInstructions(actions));
@@ -137,6 +152,10 @@ export default function Arena({
   return (
     <div className="h-dvh overflow-hidden bg-[#FEF8F0] text-[#1C1917] flex flex-col selection:bg-indigo-500/30 font-sans leading-relaxed">
       <RotateDevicePrompt />
+
+      {toastMessage && (
+        <Toast message={toastMessage} onClose={() => setToastMessage(null)} />
+      )}
 
       {/* Floating Developer Auto-Solve Button */}
       <button

@@ -20,9 +20,9 @@ import charAnorganikAmbil from '../../../../assets/kuning-ambil.svg';
 import charB3 from '../../../../assets/merah-angkat.svg';
 import charB3Ambil from '../../../../assets/merah-ambil.svg';
 
-// Import trash can assets
 import tongOrganik from '../../../../assets/wadah-hijau.svg';
 import tongAnorganik from '../../../../assets/wadah-kuning.svg';
+import charOrganikWalk from '../../../../assets/hijau-walk.webm';
 import tongB3 from '../../../../assets/wadah-merah.svg';
 
 // Import trash item SVG assets
@@ -136,6 +136,61 @@ function drawImageContain(
   ctx.drawImage(img, cx - dw / 2, cy - dh / 2, dw, dh);
 }
 
+// Draw video with object-fit: contain (centered, aspect-ratio preserved) and chroma key green screen removal
+function drawVideoContain(
+  ctx: CanvasRenderingContext2D,
+  video: HTMLVideoElement,
+  cx: number,
+  cy: number,
+  maxW: number,
+  maxH: number,
+  chromaCanvas: HTMLCanvasElement | null
+) {
+  const naturalW = video.videoWidth  || maxW;
+  const naturalH = video.videoHeight || maxH;
+  const ratio = Math.min(maxW / naturalW, maxH / naturalH);
+  const dw = naturalW * ratio;
+  const dh = naturalH * ratio;
+
+  if (chromaCanvas) {
+    const cCtx = chromaCanvas.getContext('2d');
+    if (cCtx) {
+      // Set offscreen canvas size to match natural video size for high quality keying
+      if (chromaCanvas.width !== naturalW || chromaCanvas.height !== naturalH) {
+        chromaCanvas.width = naturalW;
+        chromaCanvas.height = naturalH;
+      }
+      
+      // Draw raw frame
+      cCtx.drawImage(video, 0, 0, naturalW, naturalH);
+      
+      // Perform chroma key pixel filter to remove blue background
+      const imgData = cCtx.getImageData(0, 0, naturalW, naturalH);
+      const data = imgData.data;
+      
+      for (let i = 0; i < data.length; i += 4) {
+        const r = data[i];
+        const g = data[i + 1];
+        const b = data[i + 2];
+        
+        // Blue chroma key filter: Blue must be dominant
+        if (b > 80 && b > r * 1.25 && b > g * 1.25) {
+          data[i + 3] = 0; // Set opacity to 0 (make transparent)
+        }
+      }
+      
+      cCtx.putImageData(imgData, 0, 0);
+      
+      // Draw key-filtered offscreen canvas frame onto main canvas
+      ctx.drawImage(chromaCanvas, cx - dw / 2, cy - dh / 2, dw, dh);
+      return;
+    }
+  }
+
+  // Fallback to raw drawing if offscreen canvas fails
+  ctx.drawImage(video, cx - dw / 2, cy - dh / 2, dw, dh);
+}
+
 export default function GridMap({
   width,
   height,
@@ -165,6 +220,28 @@ export default function GridMap({
   // Preload images
   const [imagesLoaded, setImagesLoaded] = useState(false);
   const imagesRef = useRef<Record<string, HTMLImageElement>>({});
+
+  // WebM walking animation ref for the green robot
+  const walkVideoRef = useRef<HTMLVideoElement | null>(null);
+  const chromaCanvasRef = useRef<HTMLCanvasElement | null>(null);
+
+  if (!chromaCanvasRef.current && typeof document !== 'undefined') {
+    chromaCanvasRef.current = document.createElement('canvas');
+  }
+
+  useEffect(() => {
+    const video = document.createElement('video');
+    video.src = charOrganikWalk;
+    video.loop = true;
+    video.muted = true;
+    video.playsInline = true;
+    video.setAttribute('webkit-playsinline', 'true');
+    video.load();
+    walkVideoRef.current = video;
+    return () => {
+      video.pause();
+    };
+  }, []);
 
   // Keep track of the last horizontal direction of each character to prevent vertical flipping
   const lastHorizontalDirsRef = useRef<Record<CharacterId, 'LEFT' | 'RIGHT'>>({
@@ -285,186 +362,214 @@ export default function GridMap({
     const findObstacle = (x: number, y: number) =>
       obstacles.find(o => o.pos.x === x && o.pos.y === y);
 
-    // Draw Grid Cells
-    for (let gy = 0; gy < height; gy++) {
-      for (let gx = 0; gx < width; gx++) {
-        const cellW = cellSizeVal;
-        const cellH = cellSizeVal;
-        const gap = 0;
-        const { x: cx, y: cy } = toScreen(gx, gy);
+    // 1. Draw Sky Gradient Background
+    const skyGrad = ctx.createLinearGradient(0, padY, 0, padY + height * cellSizeVal);
+    skyGrad.addColorStop(0, '#bae6fd'); // sky blue top
+    skyGrad.addColorStop(0.75, '#e0f2fe'); // light blue
+    skyGrad.addColorStop(1, '#f0f9ff'); // soft whitish bottom
+    ctx.fillStyle = skyGrad;
+    ctx.fillRect(padX, padY, width * cellSizeVal, height * cellSizeVal);
 
-        const characterHere = characters.find(c => c.pos.x === gx && c.pos.y === gy);
-        const hasCan = findTrashCan(gx, gy);
-        const hasObs = findObstacle(gx, gy);
+    // 2. Draw Subtle Column Guidelines (Helps players count distance)
+    ctx.save();
+    ctx.strokeStyle = 'rgba(14, 165, 233, 0.08)'; // soft sky blue lines
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4, 4]);
+    for (let gx = 1; gx < width; gx++) {
+      const lineX = padX + gx * cellSizeVal;
+      ctx.beginPath();
+      ctx.moveTo(lineX, padY);
+      ctx.lineTo(lineX, padY + height * cellSizeVal);
+      ctx.stroke();
 
-        // Cell background — prioritize character > can > trash > obstacle
-        const hasTrashHere = findTrash(gx, gy);
-        let bg = COLORS.cellBg;
-        let border = COLORS.cellBorder;
-
-        if (characterHere) { bg = COLORS.cellActive; border = COLORS.cellActiveBorder; }
-        else if (hasCan) {
-          const c = TRASH_TYPE_COLORS[hasCan.type] ?? { bg: COLORS.cellCan, border: COLORS.cellBorder };
-          bg = c.bg; border = c.border;
-        }
-        else if (hasTrashHere) {
-          const c = TRASH_TYPE_COLORS[hasTrashHere.item.type] ?? { bg: COLORS.cellBg, border: COLORS.cellBorder };
-          bg = c.bg; border = c.border;
-        }
-        else if (hasObs) { bg = COLORS.cellObstacle; border = COLORS.cellBorder; }
-
-        ctx.fillStyle = bg;
-        ctx.strokeStyle = border;
-        ctx.lineWidth = 1;
-        const r = 6;
-        const rx = cx + gap / 2;
-        const ry = cy + gap / 2;
-        const rw = cellW - gap;
-        const rh = cellH - gap;
-
-        // Rounded rect
-        ctx.beginPath();
-        roundRectPath(ctx, rx, ry, rw, rh, r);
-        ctx.fill();
-        ctx.stroke();
-
-        // Grid coordinate label (top-left corner of cell)
-        if (cellSizeVal >= 28) {
-          const coordFontSize = Math.max(7, Math.min(cellSizeVal * 0.18, 13));
-          const coordPad = 3;
-          ctx.save();
-          ctx.font = `${coordFontSize}px monospace`;
-          ctx.textAlign = 'left';
-          ctx.textBaseline = 'top';
-          ctx.fillStyle = characterHere
-            ? 'rgba(180,120,0,0.55)'
-            : hasCan
-            ? (TRASH_TYPE_COLORS[hasCan.type]?.coord ?? 'rgba(16,100,60,0.40)')
-            : hasTrashHere
-            ? (TRASH_TYPE_COLORS[hasTrashHere.item.type]?.coord ?? 'rgba(160,130,100,0.45)')
-            : 'rgba(160,130,100,0.45)';
-          ctx.fillText(`${gx},${gy}`, rx + coordPad + 1, ry + coordPad);
-          ctx.restore();
-        }
-
-        const cx2 = cx + cellW / 2;
-        const cy2 = cy + cellH / 2;
-
-        // Trail dot (only if no character/can/obstacle is here)
-        if (!characterHere && !hasCan && !hasObs) {
-          const trailCharacters = getTrailCharacters(gx, gy);
-          if (trailCharacters.length > 0) {
-            // Draw trail as small colored dots
-            trailCharacters.forEach((_, idx) => {
-              const offsetX = (idx - (trailCharacters.length - 1) / 2) * 6;
-              ctx.beginPath();
-              ctx.arc(cx2 + offsetX, cy2, 3, 0, Math.PI * 2);
-              ctx.fillStyle = 'rgba(99, 102, 241, 0.2)';
-              ctx.fill();
-            });
-          }
-        }
-
-        // Obstacle emoji
-        if (hasObs) {
-          ctx.font = `${Math.min(cellSizeVal * 0.55, 28)}px sans-serif`;
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'middle';
-          ctx.fillText(hasObs.emoji, cx2, cy2);
-        }
-
-        // Trash item (only if no character is standing here)
-        if (hasTrashHere && !characterHere) {
-          const trashImg = imagesRef.current[hasTrashHere.item.id];
-          if (trashImg) {
-            const trashSize = cellSizeVal * 0.65;
-            drawImageContain(ctx, trashImg, cx2, cy2, trashSize, trashSize);
-          } else {
-            ctx.font = `${Math.min(cellSizeVal * 0.5, 24)}px sans-serif`;
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText(hasTrashHere.item.emoji, cx2, cy2);
-          }
-        }
-
-        // Trash can
-        if (hasCan) {
-          const canKey = `${hasCan.type}_can`;
-          const canImg = imagesRef.current[canKey];
-          if (canImg) {
-            const canSize = cellSizeVal * 0.7;
-            drawImageContain(ctx, canImg, cx2, cy2 - cellSizeVal * 0.04, canSize, canSize);
-          } else {
-            ctx.font = `${Math.min(cellSizeVal * 0.45, 24)}px sans-serif`;
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText(hasCan.emoji, cx2, cy2 - cellSizeVal * 0.08);
-          }
-
-
-
-
-          // Character overlap glow — for any character standing on the can
-          characters.forEach(c => {
-            if (c.pos.x === gx && c.pos.y === gy) {
-              const colors = CHARACTER_COLORS[c.id];
-              ctx.beginPath();
-              ctx.arc(cx2, cy2, cellW * 0.4, 0, Math.PI * 2);
-              ctx.strokeStyle = hexToRgba(colors.bg, 0.35);
-              ctx.lineWidth = 3;
-              ctx.setLineDash([4, 4]);
-              ctx.stroke();
-              ctx.setLineDash([]);
-            }
-          });
-        }
-
-        // Player characters
-        characters.forEach(c => {
-          if (c.pos.x === gx && c.pos.y === gy) {
-            drawCharacter(ctx, cx2, cy2, cellSizeVal, c);
-          }
-        });
+      // Soft coordinate numbers at the top of the columns
+      if (cellSizeVal >= 24) {
+        ctx.font = '10px monospace';
+        ctx.fillStyle = 'rgba(14, 165, 233, 0.35)';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        ctx.fillText(gx.toString(), lineX, padY + 4);
       }
     }
+    ctx.restore();
+
+    // 3. Draw Grass Floor Platform (Row 3 is the floor)
+    const floorY = padY + 3 * cellSizeVal;
+    const floorH = cellSizeVal;
+    
+    // Dirt base
+    ctx.fillStyle = '#78350f'; // rich brown dirt
+    ctx.fillRect(padX, floorY, width * cellSizeVal, floorH);
+    
+    // Top Grass layer
+    ctx.fillStyle = '#22c55e'; // vibrant grass green
+    ctx.fillRect(padX, floorY, width * cellSizeVal, floorH * 0.16);
+
+    // Subtle grassy tufts to make the ground look alive
+    ctx.fillStyle = '#16a34a';
+    for (let gx = 0; gx < width; gx++) {
+      const x = padX + gx * cellSizeVal + cellSizeVal * 0.2;
+      ctx.beginPath();
+      ctx.moveTo(x, floorY);
+      ctx.lineTo(x + 4, floorY - 5);
+      ctx.lineTo(x + 8, floorY);
+      ctx.fill();
+    }
+
+
+
+    // 5. Draw Obstacles (Placed on the floor)
+    obstacles.forEach(obs => {
+      const { x: cx, y: cy } = toScreen(obs.pos.x, obs.pos.y);
+      const cx2 = cx + cellSizeVal / 2;
+      const cy2 = cy - cellSizeVal * 0.15; // Centered to rest on top of the grass floor (y=3)
+
+      ctx.save();
+      ctx.font = `${Math.min(cellSizeVal * 0.6, 30)}px sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(obs.emoji, cx2, cy2);
+      ctx.restore();
+    });
+
+    // 6. Draw Trash Items (Placed on the floor)
+    trashItems.forEach(t => {
+      if (t.collected) return;
+      const { x: cx, y: cy } = toScreen(t.pos.x, t.pos.y);
+      const cx2 = cx + cellSizeVal / 2;
+      const cy2 = cy - cellSizeVal * 0.175; // Align bottom edge to stand on top of grass floor (sinking 5% for ground depth)
+      const trashImg = imagesRef.current[t.item.id];
+
+      ctx.save();
+      if (trashImg) {
+        const trashSize = cellSizeVal * 0.45;
+        drawImageContain(ctx, trashImg, cx2, cy2, trashSize, trashSize);
+      } else {
+        ctx.font = `${Math.min(cellSizeVal * 0.4, 20)}px sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(t.item.emoji, cx2, cy2);
+      }
+      ctx.restore();
+    });
+
+    // 7. Draw Trash Cans (Placed side-by-side on floor)
+    trashCans.forEach(tc => {
+      const { x: cx, y: cy } = toScreen(tc.pos.x, tc.pos.y);
+      const cx2 = cx + cellSizeVal / 2;
+      const cy2 = cy - cellSizeVal * 0.375; // Align bottom edge to stand on top of grass floor (sinking 5% for ground depth)
+      const canKey = `${tc.type}_can`;
+      const canImg = imagesRef.current[canKey];
+
+      ctx.save();
+      if (canImg) {
+        const canSize = cellSizeVal * 0.85;
+        drawImageContain(ctx, canImg, cx2, cy2, canSize, canSize);
+      } else {
+        const canSize = cellSizeVal * 0.85;
+        ctx.font = `${Math.min(canSize * 0.6, 28)}px sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(tc.emoji, cx2, cy2);
+      }
+      ctx.restore();
+    });
+
+    // 8. Draw Player Characters
+    characters.forEach(c => {
+      let renderX = c.pos.x;
+      let renderY = c.pos.y;
+
+      // Apply cute walking bob/bounce when moving LEFT or RIGHT during execution (only for non-WebM characters)
+      if (c.id !== 'ORGANIC' && isExecuting && (c.activeAction === 'LEFT' || c.activeAction === 'RIGHT')) {
+        const bob = Math.abs(Math.sin(performance.now() * 0.015)) * 0.05;
+        renderY -= bob;
+      }
+
+      // Sync WebM walk animation state for ORGANIC character
+      if (c.id === 'ORGANIC') {
+        const video = walkVideoRef.current;
+        if (video) {
+          const isMoving = isExecuting && (c.activeAction === 'LEFT' || c.activeAction === 'RIGHT' || c.activeAction === 'UP');
+          if (isMoving) {
+            if (video.paused) {
+              video.play().catch(() => {});
+            }
+          } else {
+            if (!video.paused) {
+              video.pause();
+              video.currentTime = 0; // Grab the first frame / start of video
+            }
+          }
+        }
+      }
+
+      // Map grid coordinates to canvas pixel coordinates
+      const cx = padX + renderX * cellSizeVal + cellSizeVal / 2;
+      const cy = padY + renderY * cellSizeVal + cellSizeVal / 2;
+
+      drawCharacter(ctx, cx, cy, cellSizeVal, c);
+    });
   }, [width, height, characters, trashItems, trashCans, obstacles, isExecuting, zoom, offset, getCellSize, imagesLoaded]);
 
-  // Draw a single character with its WebP asset or vector fallback
+  // Draw a single character with its WebP asset or vector fallback (2 grid cells height)
   const drawCharacter = (ctx: CanvasRenderingContext2D, cx: number, cy: number, cellSize: number, character: CharacterRenderData) => {
     const isPicking = character.activeAction === 'PICK' || character.activeAction === 'DROP';
     const characterKey = `${character.id}_${isPicking ? 'pick' : 'idle'}`;
     const characterImg = imagesRef.current[characterKey];
 
     const rx = cx;
-    const ry = cy;
+    const ry = cy - cellSize * 1.10; // Shift character down slightly so feet touch the grass line (y=3)
+
+    const charW = cellSize * 1.15;
+    const charH = cellSize * 2.3; // Taller character: 2.3 cells tall
+
+    // Render using WebM video for ORGANIC green robot
+    if (character.id === 'ORGANIC' && walkVideoRef.current) {
+      ctx.save();
+      ctx.translate(rx, ry);
+
+      // Flip character horizontally if facing left
+      if (character.facingDir === 'LEFT') {
+        ctx.scale(-1, 1);
+      }
+
+      drawVideoContain(ctx, walkVideoRef.current, 0, 0, charW, charH, chromaCanvasRef.current);
+      ctx.restore();
+      return;
+    }
 
     if (characterImg) {
       ctx.save();
       ctx.translate(rx, ry);
 
+      // Flip character horizontally if facing left
+      if (character.facingDir === 'LEFT') {
+        ctx.scale(-1, 1);
+      }
+
       // SVG asset drawing with contain (preserves aspect ratio)
-      const rSize = Math.min(cellSize * 0.85, 56);
-      drawImageContain(ctx, characterImg, 0, 0, rSize, rSize);
+      drawImageContain(ctx, characterImg, 0, 0, charW, charH);
       ctx.restore();
     } else {
       const colors = CHARACTER_COLORS[character.id];
-      const characterSize = Math.min(cellSize * 0.55, 34);
-      // Fallback: Vector cleaner avatar (S = Sapu, K = Kantong, T = Tong)
+      const w = cellSize * 0.55;
+      const h = cellSize * 1.4; // Tall fallback capsule
+
       ctx.save();
       ctx.translate(rx, ry);
 
-      // Body circle
+      // Body tall capsule
       ctx.fillStyle = colors.bg;
       ctx.strokeStyle = colors.border;
       ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.arc(0, 0, characterSize / 2, 0, Math.PI * 2);
+      roundRectPath(ctx, -w / 2, -h / 2, w, h, w / 2);
       ctx.fill();
       ctx.stroke();
 
       // Initial letter on fallback avatar
       ctx.fillStyle = '#ffffff';
-      ctx.font = `bold ${characterSize * 0.5}px sans-serif`;
+      ctx.font = `bold ${w * 0.6}px sans-serif`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       const initial = character.id === 'ORGANIC' ? 'S' : character.id === 'RECYCLABLE' ? 'K' : 'T';
@@ -477,11 +582,18 @@ export default function GridMap({
   const drawRef = useRef(draw);
   useEffect(() => {
     drawRef.current = draw;
-  });
-
-  useEffect(() => {
-    drawRef.current();
   }, [draw]);
+
+  // Continuous animation frame tick using requestAnimationFrame to keep canvas updated smoothly
+  useEffect(() => {
+    let animId: number;
+    const tick = () => {
+      drawRef.current();
+      animId = requestAnimationFrame(tick);
+    };
+    animId = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(animId);
+  }, []);
 
   // Resize observer to track dimensions without triggering layout reflows
   useEffect(() => {
@@ -612,11 +724,11 @@ export default function GridMap({
   const totalCapacity = characters.reduce((sum, c) => sum + c.backpackCapacity, 0);
 
   return (
-    <div className="flex flex-col bg-white border border-[#EED4B7] rounded-2xl sm:rounded-3xl p-1 lg:p-6 shadow-xl h-full select-none" id="grid-map-container">
+    <div className="flex flex-col bg-white border border-[#EED4B7] rounded-2xl sm:rounded-3xl p-0 shadow-xl h-full select-none" id="grid-map-container">
       <div
         ref={containerRef}
         className="flex-1 relative overflow-hidden rounded-2xl border border-[#EED4B7]/80"
-        style={{ minHeight: 280, cursor: isDragging.current ? 'grabbing' : 'default' }}
+        style={{ minHeight: 120, cursor: isDragging.current ? 'grabbing' : 'default' }}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}

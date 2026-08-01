@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Instruction, CommandAction, GameLevel, CharacterId } from '../../../types';
 import InstructionBlock from './InstructionBlock';
 import { AlertCircle, Square } from 'lucide-react';
@@ -108,97 +108,97 @@ export default function CommandPanel({
   // Hot-path refs — mutated imperatively, never cause re-renders
   const dragIdxRef      = useRef<number | null>(null);
   const hoverIdxRef     = useRef<number | null>(null);
-  const pointerIdRef    = useRef<number | null>(null);
   const isOutsideRef    = useRef(false);
+  const dragStartX      = useRef(0);
   const dragStartY      = useRef(0);
   const dragScrollStart = useRef(0);
-  const snapRects       = useRef<{ top: number; height: number }[]>([]);
+  const snapRects       = useRef<{ top: number; left: number; width: number; height: number }[]>([]);
 
   // React state — only className / child changes, minimal re-renders
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [hoverIndex,   setHoverIndex]   = useState<number | null>(null);
   const [isOutside,    setIsOutside]    = useState(false);
 
-  const applyDragY = (idx: number, y: number) => {
+  const applyDragXY = (idx: number, x: number, y: number) => {
     const el = itemRefs.current[idx];
-    if (el) { el.style.setProperty('--drag-y', `${y}px`); el.style.zIndex = '50'; }
+    if (el) {
+      el.style.setProperty('--drag-x', `${x}px`);
+      el.style.setProperty('--drag-y', `${y}px`);
+      el.style.zIndex = '50';
+    }
   };
 
   const clearDragEl = (idx: number) => {
     const el = itemRefs.current[idx];
-    if (el) { el.style.removeProperty('--drag-y'); el.style.zIndex = ''; }
+    if (el) {
+      el.style.removeProperty('--drag-x');
+      el.style.removeProperty('--drag-y');
+      el.style.zIndex = '';
+    }
   };
 
   const resetAllDrag = (dragIdx: number | null) => {
     if (dragIdx !== null) clearDragEl(dragIdx);
     dragIdxRef.current   = null;
     hoverIdxRef.current  = null;
-    pointerIdRef.current = null;
     isOutsideRef.current = false;
     setDraggedIndex(null);
     setHoverIndex(null);
     setIsOutside(false);
   };
 
-  const getSlotH = () => {
-    const s = snapRects.current;
-    if (!s || s.length === 0) return 44;
-    return s.length > 1 ? Math.abs(s[1].top - s[0].top) : (s[0]?.height ?? 44);
-  };
-
   const getDragItemStyle = (idx: number): React.CSSProperties => {
     if (draggedIndex === null || hoverIndex === null) return {};
     if (idx === draggedIndex) {
-      return { transform: 'translate3d(0, var(--drag-y, 0px), 0)', transition: 'none', zIndex: 50 };
+      return { transform: 'translate3d(var(--drag-x, 0px), var(--drag-y, 0px), 0)', transition: 'none', zIndex: 55 };
     }
-    const slotH = getSlotH();
-    let shift = 0;
-    if (draggedIndex < hoverIndex && idx > draggedIndex && idx <= hoverIndex) shift = -slotH;
-    if (draggedIndex > hoverIndex && idx >= hoverIndex && idx < draggedIndex)  shift =  slotH;
-    return shift !== 0
-      ? { transform: `translateY(${shift}px)`, transition: 'transform 150ms ease' }
-      : { transition: 'transform 150ms ease' };
+    return { transition: 'transform 150ms ease' };
   };
 
+  // Window pointer event handlers defined for robust, un-cancellable dragging
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>, index: number) => {
     if (isExecuting || e.button !== 0) return;
-    try { e.currentTarget.setPointerCapture(e.pointerId); } catch (_) { /* ignore */ }
 
     // Snapshot all item rects BEFORE any visual change (layout still pristine)
-    const rects: { top: number; height: number }[] = [];
+    const rects: { top: number; left: number; width: number; height: number }[] = [];
     for (let i = 0; i < instructions.length; i++) {
       const el = itemRefs.current[i];
       if (el) {
         const r = el.getBoundingClientRect();
-        rects.push({ top: r.top, height: r.height });
+        rects.push({ top: r.top, left: r.left, width: r.width, height: r.height });
       } else {
-        rects.push({ top: 0, height: 44 });
+        rects.push({ top: 0, left: 0, width: 92, height: 44 });
       }
     }
     snapRects.current = rects;
 
     dragIdxRef.current      = index;
     hoverIdxRef.current     = index;
-    pointerIdRef.current    = e.pointerId;
+    dragStartX.current      = e.clientX;
     dragStartY.current      = e.clientY;
     dragScrollStart.current = containerRef.current?.scrollTop ?? 0;
     isOutsideRef.current    = false;
 
-    applyDragY(index, 0);
+    applyDragXY(index, 0, 0);
     setDraggedIndex(index);
     setHoverIndex(index);
     setIsOutside(false);
+
+    window.addEventListener('pointermove', onWindowPointerMove);
+    window.addEventListener('pointerup', onWindowPointerUp);
+    window.addEventListener('pointercancel', onWindowPointerCancel);
   };
 
-  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+  const onWindowPointerMove = (e: PointerEvent) => {
     const dragIdx = dragIdxRef.current;
-    if (dragIdx === null || e.pointerId !== pointerIdRef.current) return;
+    if (dragIdx === null) return;
 
     const scrollDiff = (containerRef.current?.scrollTop ?? 0) - dragScrollStart.current;
-    const deltaY = (e.clientY - dragStartY.current) + scrollDiff;
+    const deltaX = e.clientX - dragStartX.current;
+    const deltaY = e.clientY - dragStartY.current;
 
-    // Move dragged item — pure DOM mutation, zero React re-render
-    applyDragY(dragIdx, deltaY);
+    // Move dragged item using deltaX and deltaY + scrollDiff (for visual relative mapping inside scroll panel)
+    applyDragXY(dragIdx, deltaX, deltaY + scrollDiff);
 
     // Outside detection
     if (containerRef.current) {
@@ -212,32 +212,48 @@ export default function CommandPanel({
       }
     }
 
-    // Hover-slot from stable snapshots
+    // Hover-slot from stable snapshots (Euclidean 2D Distance Search)
     const snap = snapRects.current;
     if (!snap || !snap[dragIdx]) return;
+    const draggedCenterX = snap[dragIdx].left + snap[dragIdx].width / 2 + deltaX;
     const draggedCenterY = snap[dragIdx].top + snap[dragIdx].height / 2 + deltaY;
-    let count = 0;
+
+    let closestIndex = dragIdx;
+    let minDistance = Infinity;
+
     for (let i = 0; i < snap.length; i++) {
-      if (i === dragIdx) continue;
-      if (snap[i].top + snap[i].height / 2 < draggedCenterY) count++;
+      const centerX = snap[i].left + snap[i].width / 2;
+      const centerY = snap[i].top + snap[i].height / 2;
+      
+      const dx = draggedCenterX - centerX;
+      const dy = draggedCenterY - centerY;
+      const dist = dx * dx + dy * dy;
+
+      if (dist < minDistance) {
+        minDistance = dist;
+        closestIndex = i;
+      }
     }
-    const newHover = Math.max(0, Math.min(instructions.length - 1, count));
+
+    const newHover = closestIndex;
     if (newHover !== hoverIdxRef.current) {
       hoverIdxRef.current = newHover;
       setHoverIndex(newHover);
     }
   };
 
-  const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+  const onWindowPointerUp = (e: PointerEvent) => {
     const dragIdx = dragIdxRef.current;
     if (dragIdx === null) return;
 
     const hover   = hoverIdxRef.current ?? dragIdx;
     const outside = isOutsideRef.current;
 
-    dragIdxRef.current = null;
-    try { e.currentTarget.releasePointerCapture(e.pointerId); } catch (_) { /* ignore */ }
+    window.removeEventListener('pointermove', onWindowPointerMove);
+    window.removeEventListener('pointerup', onWindowPointerUp);
+    window.removeEventListener('pointercancel', onWindowPointerCancel);
 
+    dragIdxRef.current = null;
     clearDragEl(dragIdx);
 
     if (outside) {
@@ -251,93 +267,121 @@ export default function CommandPanel({
     }
 
     hoverIdxRef.current  = null;
-    pointerIdRef.current = null;
     isOutsideRef.current = false;
     setDraggedIndex(null);
     setHoverIndex(null);
     setIsOutside(false);
   };
 
-  const handlePointerCancel = (e: React.PointerEvent<HTMLDivElement>) => {
-    try { e.currentTarget.releasePointerCapture(e.pointerId); } catch (_) { /* ignore */ }
+  const onWindowPointerCancel = () => {
+    window.removeEventListener('pointermove', onWindowPointerMove);
+    window.removeEventListener('pointerup', onWindowPointerUp);
+    window.removeEventListener('pointercancel', onWindowPointerCancel);
     resetAllDrag(dragIdxRef.current);
   };
 
-  const handleLostPointerCapture = () => resetAllDrag(dragIdxRef.current);
+  // Cleanup on unmount if drag was active
+  useEffect(() => {
+    return () => {
+      window.removeEventListener('pointermove', onWindowPointerMove);
+      window.removeEventListener('pointerup', onWindowPointerUp);
+      window.removeEventListener('pointercancel', onWindowPointerCancel);
+    };
+  }, []);
 
   const handleResetAll = () => {
     onReset?.();
     onClearInstructions();
   };
 
-  // Toolbox item definitions (Action blocks)
+  // Toolbox item definitions
   type ToolboxItem = { action: CommandAction; image: string; title: string };
-  const actionItems: ToolboxItem[] = [
-    { action: 'UP', image: imgAtas, title: 'Atas' },
-    { action: 'DOWN', image: imgBawah, title: 'Bawah' },
+  const movementItems: ToolboxItem[] = [
+    { action: 'UP', image: imgAtas, title: 'Loncat' },
     { action: 'LEFT', image: imgKiri, title: 'Kiri' },
     { action: 'RIGHT', image: imgKanan, title: 'Kanan' },
+  ];
+  const actionItems: ToolboxItem[] = [
     { action: 'PICK', image: imgAmbil, title: 'Ambil' },
     { action: 'DROP', image: imgBuang, title: 'Buang' },
   ];
 
   return (
-    <div className="bg-[#FCDCB5]/70 border border-[#E9BE91] rounded-2xl sm:rounded-3xl p-3 shadow-xl flex flex-col h-full space-y-1.5 md:space-y-3 overflow-y-auto" id="command-panel-card">
-
+    <div className="bg-[#FCDCB5]/70 border border-[#E9BE91] rounded-2xl sm:rounded-3xl p-3 shadow-xl flex flex-col h-full space-y-1.5 md:space-y-3 overflow-hidden" id="command-panel-card">
       {/* Main Grid: Left side spawned block panel, Right side active stack */}
       <div className="grid grid-cols-12 gap-1 sm:gap-2 flex-1 min-h-0" id="command-panel-inner-grid">
-        {/* Left side toolbox column */}
-        <div className="col-span-4 flex flex-col justify-between" id="toolbox-container">
-          <div className="flex flex-col gap-1.5">
-            {/* Direction & Action Blocks */}
-            {actionItems.map((item) => (
-              <button
-                key={item.action}
-                onClick={() => onAddCommand(item.action)}
-                disabled={isExecuting}
-                className={`w-full select-none flex items-center justify-center transition-all cursor-pointer p-0 bg-transparent border-none outline-none ${
-                  isExecuting ? 'opacity-40 cursor-not-allowed' : 'active:scale-95 hover:scale-[1.02]'
-                }`}
-                title={item.title}
-                id={`add-btn-${item.action}`}
-              >
-                <img src={item.image} alt={item.title} className="w-full h-auto object-contain" />
-              </button>
-            ))}
+        <div className="col-span-3 flex flex-col justify-start items-center overflow-y-auto px-1.5 pr-0.5 custom-scrollbar min-h-0 h-full" id="toolbox-container">
+          <div className="flex flex-col gap-1.5 items-center w-full">
+            {/* Grid layout for 3 movements (left) and 3 actions (right) */}
+            <div className="grid grid-cols-2 gap-1.5 sm:gap-2 w-full justify-items-center" id="toolbox-buttons-grid">
+              {/* Kolom Kiri: 3 Gerakan (Loncat, Kiri, Kanan) */}
+              <div className="flex flex-col gap-1 sm:gap-1.5 items-center w-full" id="movements-column">
+                {movementItems.map((item) => (
+                  <button
+                    key={item.action}
+                    onClick={() => onAddCommand(item.action)}
+                    disabled={isExecuting}
+                    className={`w-full select-none flex items-center justify-center transition-all cursor-pointer p-0 bg-transparent border-none outline-none relative hover:z-10 ${
+                      isExecuting ? 'opacity-40 cursor-not-allowed' : 'active:scale-95 hover:scale-[1.02]'
+                    }`}
+                    title={item.title}
+                    id={`add-btn-${item.action}`}
+                  >
+                    <img src={item.image} alt={item.title} className="w-full h-auto object-contain" />
+                  </button>
+                ))}
+              </div>
 
-            {/* Combined Reset & Clear Instructions Button */}
-            <div className="w-full mt-1.5" id="reset-wrapper">
-              <button
-                type="button"
-                onClick={handleResetAll}
-                disabled={isExecuting}
-                className={`w-full select-none flex items-center justify-center transition-all cursor-pointer p-0 bg-transparent border-none outline-none ${
-                  isExecuting ? 'opacity-40 cursor-not-allowed' : 'active:scale-95 hover:scale-[1.02]'
-                }`}
-                title="Reset Level & Hapus Semua Langkah"
-                id="add-btn-RESET"
-              >
-                <img src={imgReset} alt="Reset" className="w-full h-auto object-contain" />
-              </button>
+              {/* Kolom Kanan: 3 Aksi (Ambil, Buang, Reset) */}
+              <div className="flex flex-col gap-1 sm:gap-1.5 items-center w-full" id="actions-column">
+                {actionItems.map((item) => (
+                  <button
+                    key={item.action}
+                    onClick={() => onAddCommand(item.action)}
+                    disabled={isExecuting}
+                    className={`w-full select-none flex items-center justify-center transition-all cursor-pointer p-0 bg-transparent border-none outline-none relative hover:z-10 ${
+                      isExecuting ? 'opacity-40 cursor-not-allowed' : 'active:scale-95 hover:scale-[1.02]'
+                    }`}
+                    title={item.title}
+                    id={`add-btn-${item.action}`}
+                  >
+                    <img src={item.image} alt={item.title} className="w-full h-auto object-contain" />
+                  </button>
+                ))}
+
+                {/* Combined Reset & Clear Instructions Button as the 3rd action */}
+                <button
+                  type="button"
+                  onClick={handleResetAll}
+                  disabled={isExecuting}
+                  className={`w-full select-none flex items-center justify-center transition-all cursor-pointer p-0 bg-transparent border-none outline-none relative hover:z-10 ${
+                    isExecuting ? 'opacity-40 cursor-not-allowed' : 'active:scale-95 hover:scale-[1.02]'
+                  }`}
+                  title="Reset Level & Hapus Semua Langkah"
+                  id="add-btn-RESET"
+                >
+                  <img src={imgReset} alt="Reset" className="w-full h-auto object-contain" />
+                </button>
+              </div>
             </div>
 
-            {/* Mulai / Hentikan Button placed BELOW Reset */}
-            <div className="w-full mt-1" id="mulai-hentikan-wrapper">
+            {/* Mulai / Hentikan Button placed BELOW the grid */}
+            <div className="w-full mt-1 flex justify-center" id="mulai-hentikan-wrapper">
               {isExecuting ? (
                 <button
                   type="button"
                   onClick={onStopExecution}
-                  className="w-full px-2 py-1.5 sm:py-2.5 bg-rose-600 hover:bg-rose-500 border border-rose-700 text-white rounded-lg text-[9px] sm:text-xs font-bold flex items-center justify-center gap-1 animate-pulse cursor-pointer shadow-md"
+                  className="w-[50%] h-[32px] sm:h-[36px] bg-rose-600 hover:bg-rose-500 border border-rose-700 text-white rounded-xl text-[8px] sm:text-[9px] font-black flex flex-col items-center justify-center cursor-pointer shadow-sm transition-all active:scale-95 gap-0.5"
                   id="stop-execution-btn"
                 >
-                  <Square className="w-3 h-3 sm:w-4 sm:h-4 fill-white" /> <span className="font-extrabold">Hentikan</span>
+                  <Square className="w-2.5 h-2.5 fill-white" /> <span className="font-extrabold text-[8px]">Stop</span>
                 </button>
               ) : (
                 <button
                   type="button"
                   onClick={onStartExecution}
                   disabled={instructions.length === 0}
-                  className={`w-full select-none flex items-center justify-center transition-all cursor-pointer p-0 bg-transparent border-none outline-none ${
+                  className={`w-[50%] select-none flex items-center justify-center transition-all cursor-pointer p-0 bg-transparent border-none outline-none ${
                     instructions.length === 0 ? 'opacity-40 cursor-not-allowed' : 'active:scale-95 hover:scale-[1.02] animate-pulse-gentle'
                   }`}
                   id="run-execution-btn"
@@ -346,18 +390,11 @@ export default function CommandPanel({
                 </button>
               )}
             </div>
-            
-            {isOverBlockLimit && (
-              <div className="bg-rose-50 border border-rose-200 text-rose-700 p-1.5 sm:p-2.5 rounded-lg sm:rounded-xl text-[9px] sm:text-[10px] mt-1 sm:mt-2 flex items-start gap-1 sm:gap-1.5 leading-normal">
-                <AlertCircle className="w-2.5 h-2.5 sm:w-3.5 sm:h-3.5 flex-shrink-0 mt-0.5" />
-                <span>Blok kode melebihi kapasitas ({level.maxInstructions})! Hapus beberapa blok.</span>
-              </div>
-            )}
           </div>
         </div>
 
         {/* Right side instruction stack column */}
-        <div className="col-span-8 flex flex-col bg-[#FEF8F0] rounded-xl sm:rounded-2xl border border-[#E9BE91]/70 p-1 md:p-2 relative shadow-inner" id="program-stack-container">
+        <div className="col-span-9 flex flex-col bg-[#FEF8F0] rounded-xl sm:rounded-2xl border border-[#E9BE91]/70 p-1 md:p-2 relative shadow-inner" id="program-stack-container">
           {/* Character Selector Tabs — above the program stack */}
           {(level.characters || []).length > 1 && (
             <div className="flex gap-1 sm:gap-2 mb-1.5 sm:mb-3" id="character-selector-tabs">
@@ -396,7 +433,7 @@ export default function CommandPanel({
 
           <div 
             ref={containerRef}
-            className={`flex-1 overflow-y-auto space-y-[-3px] sm:space-y-[-6px] pr-0.5 sm:pr-1 custom-scrollbar min-h-0 max-h-[220px] sm:max-h-[360px] mt-1 sm:mt-2 transition-all duration-200 ${
+            className={`flex-1 overflow-y-auto flex flex-wrap gap-y-1 md:gap-y-2 items-start content-start p-1.5 pr-0.5 sm:pr-1 custom-scrollbar min-h-0 max-h-[90px] md:max-h-[360px] mt-1 sm:mt-2 transition-all duration-200 ${
               draggedIndex !== null && isOutside
                 ? 'bg-rose-50/50 border border-dashed border-rose-350 rounded-2xl scale-[0.99] shadow-inner' 
                 : ''
@@ -404,16 +441,17 @@ export default function CommandPanel({
             id="instructions-dropzone-scrollable"
           >
             {instructions.length === 0 ? (
-              <div className="h-full min-h-[60px] sm:min-h-[180px] flex flex-col items-center justify-center text-center p-1.5 sm:p-6 select-none">
+              <div className="h-full min-h-[60px] lg:min-h-[180px] [@media(max-height:740px)]:lg:min-h-[100px] flex flex-col items-center justify-center text-center p-1.5 lg:p-6 select-none w-full">
                 <span className="text-xl sm:text-3xl mb-1 sm:mb-2.5">📂</span>
                 <p className="font-bold text-[9px] sm:text-xs text-amber-955">Program Kosong</p>
-                <p className="hidden sm:block text-[10px] text-gray-500 mt-1 max-w-[200px] leading-relaxed">
+                <p className="hidden sm:block text-[10px] text-gray-500 mt-1 max-w-[200px] leading-relaxed mx-auto">
                   Pilih instruksi di samping untuk mulai.
                 </p>
               </div>
             ) : (
               instructions.map((inst, index) => {
                 const isDragged = draggedIndex === index;
+                const isHoverTarget = hoverIndex === index;
                 return (
                   <div
                     key={inst.id}
@@ -422,13 +460,11 @@ export default function CommandPanel({
                       if (el) itemRefs.current[index] = el;
                     }}
                     onPointerDown={(e) => handlePointerDown(e, index)}
-                    onPointerMove={handlePointerMove}
-                    onPointerUp={handlePointerUp}
-                    onPointerCancel={handlePointerCancel}
-                    onLostPointerCapture={handleLostPointerCapture}
                     onDragStart={(e) => e.preventDefault()}
-                    className={`relative z-0 flex items-center justify-between bg-transparent select-none touch-none cursor-grab active:cursor-grabbing hover:brightness-95 transition-all ${
+                    className={`relative z-0 flex items-center justify-between bg-transparent select-none touch-none cursor-grab active:cursor-grabbing hover:brightness-95 transition-all w-[92px] sm:w-[110px] flex-shrink-0 mr-[-14px] sm:mr-[-20px] mb-1.5 ${
                       isDragged ? 'opacity-50' : 'opacity-100'
+                    } ${
+                      isHoverTarget && !isDragged ? 'ring-2 ring-indigo-500 rounded-xl scale-105 z-10 shadow-lg' : ''
                     }`}
                     style={getDragItemStyle(index)}
                   >
@@ -452,7 +488,7 @@ export default function CommandPanel({
             </div>
           )}
 
-          {/* Running speed controls — stacked on mobile, row on desktop */}
+          {/* Running blocks badge */}
           <div className="mt-0.5 md:mt-4 pt-0.5 md:pt-3 border-t border-[#EED4B7] flex flex-col items-stretch gap-1 md:gap-2 w-full min-w-0">
             {/* Blok badge */}
             <div className="flex flex-col sm:flex-col md:flex-row md:items-center gap-0 md:gap-1 bg-white border border-[#EED4B7] px-1.5 sm:px-2.5 py-0.5 rounded-md sm:rounded-lg shadow-sm w-full md:w-auto min-w-0">
@@ -460,33 +496,6 @@ export default function CommandPanel({
               <span className={`text-[10px] sm:text-[12px] font-mono font-extrabold ${isOverBlockLimit ? 'text-rose-600 font-black animate-pulse' : 'text-amber-955'}`}>
                 {blockCount}/{level.maxInstructions}
               </span>
-            </div>
-            {/* Speed controls */}
-            <div className="flex flex-col items-start bg-white border border-[#EED4B7] px-2.5 py-1.5 rounded-lg sm:rounded-xl shadow-sm w-full min-w-0 gap-1.5">
-              <span className="text-[9px] sm:text-[10px] font-bold text-stone-500 uppercase font-mono tracking-wider">Kecepatan Simulasi</span>
-              <div className="flex flex-row items-center justify-start gap-1 w-full">
-                <button
-                  type="button"
-                  onClick={() => onSetExecSpeed(1)}
-                  className={`px-2 py-0.5 text-[9px] sm:text-[10px] rounded-md font-mono transition-colors cursor-pointer ${execSpeed === 1 ? 'bg-indigo-600 text-white font-bold' : 'text-stone-500 hover:text-indigo-600'}`}
-                >
-                  1x
-                </button>
-                <button
-                  type="button"
-                  onClick={() => onSetExecSpeed(1.5)}
-                  className={`px-2 py-0.5 text-[9px] sm:text-[10px] rounded-md font-mono transition-colors cursor-pointer ${execSpeed === 1.5 ? 'bg-indigo-600 text-white font-bold' : 'text-stone-500 hover:text-indigo-600'}`}
-                >
-                  1.5x
-                </button>
-                <button
-                  type="button"
-                  onClick={() => onSetExecSpeed(2)}
-                  className={`px-2 py-0.5 text-[9px] sm:text-[10px] rounded-md font-mono transition-colors cursor-pointer ${execSpeed === 2 ? 'bg-indigo-600 text-white font-bold' : 'text-stone-500 hover:text-indigo-600'}`}
-                >
-                  2x
-                </button>
-              </div>
             </div>
           </div>
         </div>

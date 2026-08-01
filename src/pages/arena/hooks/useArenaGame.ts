@@ -88,6 +88,25 @@ export function useArenaGame(
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const [execSpeed, setExecSpeed] = useState(1);
 
+  // Physics tracking state for continuous platformer movement
+  const physicsStateRef = useRef<Record<CharacterId, {
+    x: number;
+    y: number;
+    vx: number;
+    vy: number;
+    isOnGround: boolean;
+    frameTicks: number;
+    playbackIndex: number;
+    activeInstructionId: string | null;
+    backpack: any[];
+    finished: boolean;
+    hasErrored: boolean;
+  }>>({
+    ORGANIC: { x: 0, y: 3, vx: 0, vy: 0, isOnGround: true, frameTicks: 0, playbackIndex: 0, activeInstructionId: null, backpack: [], finished: false, hasErrored: false },
+    RECYCLABLE: { x: 0, y: 3, vx: 0, vy: 0, isOnGround: true, frameTicks: 0, playbackIndex: 0, activeInstructionId: null, backpack: [], finished: false, hasErrored: false },
+    B3: { x: 0, y: 3, vx: 0, vy: 0, isOnGround: true, frameTicks: 0, playbackIndex: 0, activeInstructionId: null, backpack: [], finished: false, hasErrored: false }
+  });
+
   // Initialize level upon load
   const getCharacterLabel = (id: CharacterId) => {
     return 'Robot Pemilah';
@@ -280,6 +299,21 @@ export function useArenaGame(
         finished: false,
         hasErrored: false,
       };
+
+      // Initialize physics values
+      physicsStateRef.current[character.id] = {
+        x: character.startPos.x,
+        y: character.startPos.y,
+        vx: 0,
+        vy: 0,
+        isOnGround: true,
+        frameTicks: 0,
+        playbackIndex: 0,
+        activeInstructionId: null,
+        backpack: [],
+        finished: false,
+        hasErrored: false
+      };
     }
 
     setCharacterStates(newCharacters);
@@ -321,6 +355,21 @@ export function useArenaGame(
           trailPositions: [{ ...character.startPos }],
           finished: false,
           hasErrored: false,
+        };
+
+        // Reset physics variables
+        physicsStateRef.current[character.id] = {
+          x: character.startPos.x,
+          y: character.startPos.y,
+          vx: 0,
+          vy: 0,
+          isOnGround: true,
+          frameTicks: 0,
+          playbackIndex: 0,
+          activeInstructionId: null,
+          backpack: [],
+          finished: false,
+          hasErrored: false
         };
       }
       return updated as Record<CharacterId, CharacterState>;
@@ -408,14 +457,14 @@ export function useArenaGame(
     }
   };
 
-  // --- Parallel Execution Loop ---
+  // --- Continuous Physics Execution Loop ---
   useEffect(() => {
     if (!isExecuting) {
       if (intervalRef.current) clearInterval(intervalRef.current);
       return;
     }
 
-    const intervalTime = 650 / execSpeed;
+    const intervalTime = 20; // 20ms physics tick loop (50 FPS)
 
     intervalRef.current = setInterval(() => {
       const currentCharacters = { ...characterStatesRef.current };
@@ -424,203 +473,194 @@ export function useArenaGame(
       let allFinished = true;
       let hasError = false;
 
-      // Process each character's next step
+      // Process physics updates for each character
       for (const characterId of Object.keys(currentCharacters) as CharacterId[]) {
         const character = { ...currentCharacters[characterId] };
-        if (character.finished || character.hasErrored) continue;
+        const physics = physicsStateRef.current[characterId];
 
-        if (character.playbackIndex >= character.compiledSteps.length) {
+        if (physics.finished || physics.hasErrored) continue;
+
+        if (physics.playbackIndex >= character.compiledSteps.length) {
+          physics.finished = true;
+          physics.vx = 0;
+          physics.vy = 0;
           character.finished = true;
+          character.playbackIndex = physics.playbackIndex;
+          character.activeInstructionId = null;
           currentCharacters[characterId] = character;
           continue;
         }
 
         allFinished = false;
-        const step = character.compiledSteps[character.playbackIndex];
+        const step = character.compiledSteps[physics.playbackIndex];
+        physics.activeInstructionId = step.instructionId;
         character.activeInstructionId = step.instructionId;
 
         const characterLabel = getCharacterLabel(characterId);
-        const stepNum = character.playbackIndex + 1;
+        const stepNum = physics.playbackIndex + 1;
 
-        switch (step.action) {
-          case 'UP': {
-            playSound('jump');
-            const targetX = character.pos.x;
-            const targetY = character.pos.y - 1;
-            character.facingDir = 'UP';
+        // Apply constant gravity
+        physics.vy += 0.012; // Gravity pull
 
-            const collision = checkCollision(targetX, targetY, currentCharacters, characterId);
-            if (collision === 'WALL') {
-              playSound('crash'); character.hasErrored = true; currentCharacters[characterId] = character; hasError = true;
-              newLogs.push(`[Gerakan] ${characterLabel} langkah ${stepNum}: Bergerak ke atas...`);
-              newLogs.push(`[Kesalahan] ${characterLabel} menabrak dinding taman di (${targetX}, ${targetY})! 💥`);
-              break;
-            }
-            if (collision === 'OBSTACLE') {
-              playSound('crash'); character.hasErrored = true; currentCharacters[characterId] = character; hasError = true;
-              newLogs.push(`[Gerakan] ${characterLabel} langkah ${stepNum}: Bergerak ke atas...`);
-              const obs = level.obstacles.find(o => o.pos.x === targetX && o.pos.y === targetY);
-              newLogs.push(`[Kesalahan] ${characterLabel} menabrak rintangan ${obs?.emoji || '?'} di (${targetX}, ${targetY})! 💥`);
-              break;
-            }
-            if (collision === 'CHARACTER') {
-              playSound('crash'); character.hasErrored = true; currentCharacters[characterId] = character; hasError = true;
-              newLogs.push(`[Gerakan] ${characterLabel} langkah ${stepNum}: Bergerak ke atas...`);
-              newLogs.push(`[Kesalahan] ${characterLabel} bertabrakan dengan karakter lain di (${targetX}, ${targetY})! 💥`);
-              break;
-            }
+        // Process instruction state machine
+        physics.frameTicks++;
 
-            character.pos = { x: targetX, y: targetY };
-            character.trailPositions = [...character.trailPositions, { x: targetX, y: targetY }];
-            newLogs.push(`[Gerakan] ${characterLabel} langkah ${stepNum}: Melangkah ke (${targetX}, ${targetY}).`);
-            break;
+        if (step.action === 'RIGHT') {
+          physics.vx = 0.035;
+          character.facingDir = 'RIGHT';
+          // At 50 FPS, 30 ticks takes 600ms, moving 30 * 0.035 = 1.05 cells.
+          if (physics.frameTicks >= 30) {
+            physics.vx = 0;
+            physics.frameTicks = 0;
+            physics.playbackIndex++;
+            newLogs.push(`[Gerakan] ${characterLabel} langkah ${stepNum}: Melangkah ke kanan.`);
           }
-
-          case 'DOWN': {
-            playSound('jump');
-            const targetX = character.pos.x;
-            const targetY = character.pos.y + 1;
-            character.facingDir = 'DOWN';
-
-            const collision = checkCollision(targetX, targetY, currentCharacters, characterId);
-            if (collision === 'WALL') {
-              playSound('crash'); character.hasErrored = true; currentCharacters[characterId] = character; hasError = true;
-              newLogs.push(`[Gerakan] ${characterLabel} langkah ${stepNum}: Bergerak ke bawah...`);
-              newLogs.push(`[Kesalahan] ${characterLabel} menabrak dinding taman di (${targetX}, ${targetY})! 💥`);
-              break;
-            }
-            if (collision === 'OBSTACLE') {
-              playSound('crash'); character.hasErrored = true; currentCharacters[characterId] = character; hasError = true;
-              newLogs.push(`[Gerakan] ${characterLabel} langkah ${stepNum}: Bergerak ke bawah...`);
-              const obs = level.obstacles.find(o => o.pos.x === targetX && o.pos.y === targetY);
-              newLogs.push(`[Kesalahan] ${characterLabel} menabrak rintangan ${obs?.emoji || '?'} di (${targetX}, ${targetY})! 💥`);
-              break;
-            }
-            if (collision === 'CHARACTER') {
-              playSound('crash'); character.hasErrored = true; currentCharacters[characterId] = character; hasError = true;
-              newLogs.push(`[Gerakan] ${characterLabel} langkah ${stepNum}: Bergerak ke bawah...`);
-              newLogs.push(`[Kesalahan] ${characterLabel} bertabrakan dengan karakter lain di (${targetX}, ${targetY})! 💥`);
-              break;
-            }
-
-            character.pos = { x: targetX, y: targetY };
-            character.trailPositions = [...character.trailPositions, { x: targetX, y: targetY }];
-            newLogs.push(`[Gerakan] ${characterLabel} langkah ${stepNum}: Melangkah ke (${targetX}, ${targetY}).`);
-            break;
+        } else if (step.action === 'LEFT') {
+          physics.vx = -0.035;
+          character.facingDir = 'LEFT';
+          if (physics.frameTicks >= 30) {
+            physics.vx = 0;
+            physics.frameTicks = 0;
+            physics.playbackIndex++;
+            newLogs.push(`[Gerakan] ${characterLabel} langkah ${stepNum}: Melangkah ke kiri.`);
           }
-
-          case 'LEFT': {
-            playSound('jump');
-            const targetX = character.pos.x - 1;
-            const targetY = character.pos.y;
-            character.facingDir = 'LEFT';
-
-            const collision = checkCollision(targetX, targetY, currentCharacters, characterId);
-            if (collision === 'WALL') {
-              playSound('crash'); character.hasErrored = true; currentCharacters[characterId] = character; hasError = true;
-              newLogs.push(`[Gerakan] ${characterLabel} langkah ${stepNum}: Bergerak ke kiri...`);
-              newLogs.push(`[Kesalahan] ${characterLabel} menabrak dinding taman di (${targetX}, ${targetY})! 💥`);
-              break;
+        } else if (step.action === 'UP') { // Loncat / Jump forward in the facing direction
+          // On start of jump, trigger vertical velocity
+          if (physics.frameTicks === 1) {
+            if (physics.isOnGround) {
+              playSound('jump');
+              physics.vy = -0.17; // Jump up force
+              physics.isOnGround = false;
             }
-            if (collision === 'OBSTACLE') {
-              playSound('crash'); character.hasErrored = true; currentCharacters[characterId] = character; hasError = true;
-              newLogs.push(`[Gerakan] ${characterLabel} langkah ${stepNum}: Bergerak ke kiri...`);
-              const obs = level.obstacles.find(o => o.pos.x === targetX && o.pos.y === targetY);
-              newLogs.push(`[Kesalahan] ${characterLabel} menabrak rintangan ${obs?.emoji || '?'} di (${targetX}, ${targetY})! 💥`);
-              break;
-            }
-            if (collision === 'CHARACTER') {
-              playSound('crash'); character.hasErrored = true; currentCharacters[characterId] = character; hasError = true;
-              newLogs.push(`[Gerakan] ${characterLabel} langkah ${stepNum}: Bergerak ke kiri...`);
-              newLogs.push(`[Kesalahan] ${characterLabel} bertabrakan dengan karakter lain di (${targetX}, ${targetY})! 💥`);
-              break;
-            }
-
-            character.pos = { x: targetX, y: targetY };
-            character.trailPositions = [...character.trailPositions, { x: targetX, y: targetY }];
-            newLogs.push(`[Gerakan] ${characterLabel} langkah ${stepNum}: Melangkah ke (${targetX}, ${targetY}).`);
-            break;
           }
+          // Move forward while jumping based on facing direction
+          physics.vx = character.facingDir === 'RIGHT' ? 0.065 : -0.065;
 
-          case 'RIGHT': {
-            playSound('jump');
-            const targetX = character.pos.x + 1;
-            const targetY = character.pos.y;
-            character.facingDir = 'RIGHT';
-
-            const collision = checkCollision(targetX, targetY, currentCharacters, characterId);
-            if (collision === 'WALL') {
-              playSound('crash'); character.hasErrored = true; currentCharacters[characterId] = character; hasError = true;
-              newLogs.push(`[Gerakan] ${characterLabel} langkah ${stepNum}: Bergerak ke kanan...`);
-              newLogs.push(`[Kesalahan] ${characterLabel} menabrak dinding taman di (${targetX}, ${targetY})! 💥`);
-              break;
-            }
-            if (collision === 'OBSTACLE') {
-              playSound('crash'); character.hasErrored = true; currentCharacters[characterId] = character; hasError = true;
-              newLogs.push(`[Gerakan] ${characterLabel} langkah ${stepNum}: Bergerak ke kanan...`);
-              const obs = level.obstacles.find(o => o.pos.x === targetX && o.pos.y === targetY);
-              newLogs.push(`[Kesalahan] ${characterLabel} menabrak rintangan ${obs?.emoji || '?'} di (${targetX}, ${targetY})! 💥`);
-              break;
-            }
-            if (collision === 'CHARACTER') {
-              playSound('crash'); character.hasErrored = true; currentCharacters[characterId] = character; hasError = true;
-              newLogs.push(`[Gerakan] ${characterLabel} langkah ${stepNum}: Bergerak ke kanan...`);
-              newLogs.push(`[Kesalahan] ${characterLabel} bertabrakan dengan karakter lain di (${targetX}, ${targetY})! 💥`);
-              break;
-            }
-
-            character.pos = { x: targetX, y: targetY };
-            character.trailPositions = [...character.trailPositions, { x: targetX, y: targetY }];
-            newLogs.push(`[Gerakan] ${characterLabel} langkah ${stepNum}: Melangkah ke (${targetX}, ${targetY}).`);
-            break;
+          // Jump finishes only when landing back on ground
+          if (physics.frameTicks > 5 && physics.isOnGround) {
+            physics.vx = 0;
+            physics.frameTicks = 0;
+            physics.playbackIndex++;
+            newLogs.push(`[Gerakan] ${characterLabel} langkah ${stepNum}: Melompat dan mendarat.`);
           }
+        } else if (step.action === 'DOWN') { // Down/descend (optional fast drop)
+          physics.vy += 0.02; // fast fall
+          if (physics.frameTicks >= 10 || physics.isOnGround) {
+            physics.frameTicks = 0;
+            physics.playbackIndex++;
+            newLogs.push(`[Gerakan] ${characterLabel} langkah ${stepNum}: Turun.`);
+          }
+        } else if (step.action === 'PICK') {
+          // Immediately check if near any uncollected trash
+          const targetX = physics.x;
+          const targetY = physics.y;
+          const foundIdx = currentTrash.findIndex(
+            t => Math.abs(t.pos.x - targetX) <= 1.2 && Math.abs(t.pos.y - targetY) <= 0.6 && !t.collected
+          );
 
-          case 'PICK': {
-            const foundIdx = currentTrash.findIndex(
-              t => t.pos.x === character.pos.x && t.pos.y === character.pos.y && !t.collected
-            );
-            if (foundIdx !== -1) {
-              const targetTrash = currentTrash[foundIdx];
-              if (character.backpack.length >= level.maxCapacity) {
-                playSound('fail');
-                character.hasErrored = true; currentCharacters[characterId] = character; hasError = true;
-                newLogs.push(`[Aksi] ${characterLabel} langkah ${stepNum}: Ingin mengambil ${targetTrash.item.name} di (${character.pos.x}, ${character.pos.y}).`);
-                newLogs.push(`[Kesalahan] ${characterLabel} gagal! Tas penuh! Kapasitas maksimal ${level.maxCapacity}.`);
-                break;
-              }
+          if (foundIdx !== -1) {
+            const targetTrash = currentTrash[foundIdx];
+            if (physics.backpack.length >= level.maxCapacity) {
+              playSound('fail');
+              physics.hasErrored = true;
+              character.hasErrored = true;
+              hasError = true;
+              newLogs.push(`[Aksi] ${characterLabel} langkah ${stepNum}: Ingin mengambil ${targetTrash.item.name}.`);
+              newLogs.push(`[Kesalahan] ${characterLabel} gagal! Tas penuh! Kapasitas maksimal ${level.maxCapacity}.`);
+            } else {
               playSound('collect');
               currentTrash[foundIdx] = { ...targetTrash, collected: true };
+              physics.backpack = [...physics.backpack, targetTrash.item];
               character.backpack = [...character.backpack, targetTrash.item];
-              newLogs.push(`[Aksi] ${characterLabel} langkah ${stepNum}: Mengambil "${targetTrash.item.name}" ${targetTrash.item.emoji} di (${character.pos.x}, ${character.pos.y}).`);
-            } else {
-              newLogs.push(`[Perhatian] ${characterLabel} langkah ${stepNum}: Tidak ada sampah di (${character.pos.x}, ${character.pos.y})!`);
+              newLogs.push(`[Aksi] ${characterLabel} langkah ${stepNum}: Mengambil "${targetTrash.item.name}" ${targetTrash.item.emoji}.`);
             }
-            break;
+          } else {
+            newLogs.push(`[Perhatian] ${characterLabel} langkah ${stepNum}: Tidak ada sampah di dekat karakter!`);
           }
+          physics.frameTicks = 0;
+          physics.playbackIndex++;
+        } else if (step.action === 'DROP') {
+          const targetX = physics.x;
+          const targetY = physics.y;
+          // Find if there is a trash can nearby
+          const foundCan = level.trashCans.find(
+            tc => Math.abs(tc.pos.x - targetX) <= 1.2 && Math.abs(tc.pos.y - targetY) <= 0.8
+          );
 
-          case 'DROP': {
-            const foundCan = level.trashCans.find(
-              tc => tc.pos.x === character.pos.x && tc.pos.y === character.pos.y
-            );
-            if (foundCan) {
-              const matchingItems = character.backpack.filter(item => item.type === foundCan.type);
-              if (matchingItems.length > 0) {
-                playSound('dump');
-                character.backpack = character.backpack.filter(item => item.type !== foundCan.type);
-                newLogs.push(`[Pilah Sukses] ${characterLabel} langkah ${stepNum}: ${matchingItems.length} sampah ${foundCan.label} dibuang ke tong ${foundCan.emoji}!`);
-              } else {
-                playSound('fail');
-                newLogs.push(`[Aksi] ${characterLabel} langkah ${stepNum}: Karakter di atas Tong ${foundCan.label} ${foundCan.emoji} tapi tidak membawa sampah jenis ini!`);
-              }
+          if (foundCan) {
+            const matchingItems = physics.backpack.filter(item => item.type === foundCan.type);
+            if (matchingItems.length > 0) {
+              playSound('dump');
+              physics.backpack = physics.backpack.filter(item => item.type !== foundCan.type);
+              character.backpack = physics.backpack;
+              newLogs.push(`[Pilah Sukses] ${characterLabel} langkah ${stepNum}: ${matchingItems.length} sampah ${foundCan.label} dibuang ke tong ${foundCan.emoji}!`);
             } else {
-              playSound('click');
-              newLogs.push(`[Perhatian] ${characterLabel} langkah ${stepNum}: Karakter membuang sampah di tanah kosong!`);
+              playSound('fail');
+              newLogs.push(`[Aksi] ${characterLabel} langkah ${stepNum}: Di dekat Tong ${foundCan.label} ${foundCan.emoji} tapi tidak membawa sampah jenis ini!`);
             }
-            break;
+          } else {
+            playSound('click');
+            newLogs.push(`[Perhatian] ${characterLabel} langkah ${stepNum}: Membuang sampah di tanah kosong!`);
           }
+          physics.frameTicks = 0;
+          physics.playbackIndex++;
         }
 
-        character.playbackIndex++;
+        // Apply velocities
+        physics.x += physics.vx;
+        physics.y += physics.vy;
+
+        // Apply boundaries
+        if (physics.x < 0) { physics.x = 0; physics.vx = 0; }
+        if (physics.x > 15) { physics.x = 15; physics.vx = 0; }
+
+        // Floor boundary collision
+        if (physics.y >= 3.0) {
+          physics.y = 3.0;
+          physics.vy = 0;
+          physics.isOnGround = true;
+        }
+
+        // Obstacles collision detection
+        level.obstacles.forEach(obs => {
+          const ox = obs.pos.x;
+          const oy = obs.pos.y; // bottom floor obstacle has y=3, so top of obstacle is y=2.2 (height is ~0.8)
+          const obstacleTopY = oy - 0.8; // top surface of obstacle
+
+          // Check if character's feet land on top of the obstacle
+          // Horizontal range of obstacle: [ox - 0.45, ox + 0.45]
+          const isHorizontalOverlap = physics.x >= ox - 0.45 && physics.x <= ox + 0.45;
+          if (isHorizontalOverlap) {
+            // Landing detection: if character's feet are falling through the top of the obstacle
+            if (physics.vy >= 0 && physics.y >= obstacleTopY && physics.y - physics.vy <= obstacleTopY + 0.15) {
+              physics.y = obstacleTopY;
+              physics.vy = 0;
+              physics.isOnGround = true;
+            }
+            // Side collision: if feet are below the top of the obstacle, they run into the side!
+            else if (physics.y > obstacleTopY + 0.05) {
+              // Block walking into it
+              if (physics.vx > 0 && physics.x > ox - 0.45) {
+                physics.x = ox - 0.45;
+                physics.vx = 0;
+              } else if (physics.vx < 0 && physics.x < ox + 0.45) {
+                physics.x = ox + 0.45;
+                physics.vx = 0;
+              }
+            }
+          }
+        });
+
+        // Sync coordinates back to character state
+        character.pos = { x: parseFloat(physics.x.toFixed(3)), y: parseFloat(physics.y.toFixed(3)) };
+        character.playbackIndex = physics.playbackIndex;
+        
+        // Add trail position if moved significantly
+        const lastTrail = character.trailPositions[character.trailPositions.length - 1];
+        if (!lastTrail || Math.abs(lastTrail.x - character.pos.x) > 0.3 || Math.abs(lastTrail.y - character.pos.y) > 0.3) {
+          character.trailPositions = [...character.trailPositions, { ...character.pos }];
+        }
+
         currentCharacters[characterId] = character;
       }
 
@@ -629,6 +669,7 @@ export function useArenaGame(
 
       setCharacterStates(cloneCharacterStates(currentCharacters));
       setActiveTrash([...currentTrash]);
+
       if (newLogs.length > 0) {
         setLogs(prev => [...prev, ...newLogs]);
       }

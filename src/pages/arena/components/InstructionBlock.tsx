@@ -24,7 +24,7 @@ export default function InstructionBlock({
   const getBlockConfig = (type: string) => {
     switch (type) {
       case 'UP':
-        return { emoji: '⬆️', label: 'ATAS' };
+        return { emoji: '⬆️', label: 'LONCAT' };
       case 'DOWN':
         return { emoji: '⬇️', label: 'BAWAH' };
       case 'LEFT':
@@ -89,7 +89,7 @@ export default function InstructionBlock({
   const renderIcon = (type: string) => {
     return (
       <svg
-        className="w-5 h-5 sm:w-8 sm:h-8 flex-shrink-0"
+        className="w-4 h-4 sm:w-6 sm:h-6 flex-shrink-0"
         viewBox="0 0 65.92 65.92"
       >
         {/* White Card Background rx="9.09" matching tombol-atas.svg */}
@@ -140,63 +140,32 @@ export default function InstructionBlock({
 
   return (
     <div
-      className="relative z-0 flex items-center justify-between py-0.5 pl-1 pr-1.5 sm:py-1 sm:pl-2.5 sm:pr-3.5 h-7 sm:h-11 w-full bg-transparent outline-none select-none"
+      className="relative z-0 flex items-center justify-between py-0.5 pl-5 pr-6 sm:py-1 sm:pl-5 sm:pr-20 h-7 sm:h-11 w-full bg-transparent outline-none select-none"
       id={`block-flat-${instruction.id}`}
     >
-      {/* SVG Bubble Background (3-slice scaled to prevent distortion) */}
-      <div className="absolute inset-0 w-full h-full -z-10 pointer-events-none flex select-none overflow-hidden">
-        {/* Left Cap */}
-        <svg
-          className="h-full aspect-[20/112.65] flex-shrink-0"
-          viewBox="0 0 20 112.65"
-          preserveAspectRatio="none"
-        >
-          <path
-            fill={colors.fillColor}
-            d="M265.02,110.65c-5.37,0-9.74-4.37-9.74-9.74v-4.6c0-2.42-1.97-4.4-4.4-4.4H13c-6.07,0-11-4.93-11-11V13C2,6.93,6.93,2,13,2h236.74c.11,0,.19.09.19.19v2.84c0,8.27,6.73,15,15,15h10.07c8.27,0,15-6.73,15-15v-2.84c0-.11.09-.19.19-.19h7.63c6.07,0,11,4.93,11,11v67.91c0,6.07-4.93,11-11,11h-8.77c-2.42,0-4.4,1.97-4.4,4.4v4.6c0,5.37-4.37,9.74-9.74,9.74h-9.89Z"
-          />
-          <path
-            fill={colors.strokeColor}
-            d="M297.82,4c4.96,0,9,4.04,9,9v67.91c0,4.96-4.04,9-9,9h-8.77c-3.53,0-6.4,2.87-6.4,6.4v4.6c0,4.27-3.47,7.74-7.74,7.74h-9.89c-4.27,0-7.74-3.47-7.74-7.74v-4.6c0-3.53-2.87-6.4-6.4-6.4H13c-4.96,0-9-4.04-9-9V13c0-4.96,4.04-9,9-9h234.93v1.03c0,9.37,7.63,17,17,17h10.07c9.37,0,17-7.63,17-17v-1.03h5.82M297.82,0h-7.63c-1.21,0-2.19.98-2.19,2.19v2.84c0,7.18-5.82,13-13,13h-10.07c-7.18,0-13-5.82-13-13v-2.84c0-1.21-.98-2.19-2.19-2.19H13C5.82,0,0,5.82,0,13v67.91c0,7.18,5.82,13,13,13h237.88c1.32,0,2.4,1.07,2.4,2.4v4.6c0,6.48,5.26,11.74,11.74,11.74h9.89c6.48,0,11.74-5.26,11.74-11.74v-4.6c0-1.32,1.07-2.4,2.4-2.4h8.77c7.18,0,13-5.82,13-13V13c0-7.18-5.82-13-13-13h0Z"
-          />
-        </svg>
+      {/* SVG Bubble Background (Horizontal Puzzle Shape) */}
+      <svg
+        className="absolute inset-0 w-full h-full -z-10 pointer-events-none select-none"
+        viewBox="0 0 120 36"
+        preserveAspectRatio="none"
+      >
+        {/* Fill path */}
+        <path
+          fill={colors.fillColor}
+          d="M 14,2 L 102,2 A 4,4 0 0 1 106,6 L 106,12 C 112,12 116,14 116,18 C 116,22 112,24 106,24 L 106,30 A 4,4 0 0 1 102,34 L 14,34 A 4,4 0 0 1 10,30 L 10,24 C 16,24 20,22 20,18 C 20,14 16,12 10,12 L 10,6 A 4,4 0 0 1 14,2 Z"
+        />
+        {/* Stroke path */}
+        <path
+          stroke={colors.strokeColor}
+          strokeWidth="1.5"
+          fill="none"
+          d="M 14,2 L 102,2 A 4,4 0 0 1 106,6 L 106,12 C 112,12 116,14 116,18 C 116,22 112,24 106,24 L 106,30 A 4,4 0 0 1 102,34 L 14,34 A 4,4 0 0 1 10,30 L 10,24 C 16,24 20,22 20,18 C 20,14 16,12 10,12 L 10,6 A 4,4 0 0 1 14,2 Z"
+        />
+      </svg>
 
-        {/* Middle Slice */}
-        <svg
-          className="h-full flex-1"
-          viewBox="20 0 220 112.65"
-          preserveAspectRatio="none"
-        >
-          <path
-            fill={colors.fillColor}
-            d="M265.02,110.65c-5.37,0-9.74-4.37-9.74-9.74v-4.6c0-2.42-1.97-4.4-4.4-4.4H13c-6.07,0-11-4.93-11-11V13C2,6.93,6.93,2,13,2h236.74c.11,0,.19.09.19.19v2.84c0,8.27,6.73,15,15,15h10.07c8.27,0,15-6.73,15-15v-2.84c0-.11.09-.19.19-.19h7.63c6.07,0,11,4.93,11,11v67.91c0,6.07-4.93,11-11,11h-8.77c-2.42,0-4.4,1.97-4.4,4.4v4.6c0,5.37-4.37,9.74-9.74,9.74h-9.89Z"
-          />
-          <path
-            fill={colors.strokeColor}
-            d="M297.82,4c4.96,0,9,4.04,9,9v67.91c0,4.96-4.04,9-9,9h-8.77c-3.53,0-6.4,2.87-6.4,6.4v4.6c0,4.27-3.47,7.74-7.74,7.74h-9.89c-4.27,0-7.74-3.47-7.74-7.74v-4.6c0-3.53-2.87-6.4-6.4-6.4H13c-4.96,0-9-4.04-9-9V13c0-4.96,4.04-9,9-9h234.93v1.03c0,9.37,7.63,17,17,17h10.07c9.37,0,17-7.63,17-17v-1.03h5.82M297.82,0h-7.63c-1.21,0-2.19.98-2.19,2.19v2.84c0,7.18-5.82,13-13,13h-10.07c-7.18,0-13-5.82-13-13v-2.84c0-1.21-.98-2.19-2.19-2.19H13C5.82,0,0,5.82,0,13v67.91c0,7.18,5.82,13,13,13h237.88c1.32,0,2.4,1.07,2.4,2.4v4.6c0,6.48,5.26,11.74,11.74,11.74h9.89c6.48,0,11.74-5.26,11.74-11.74v-4.6c0-1.32,1.07-2.4,2.4-2.4h8.77c7.18,0,13-5.82,13-13V13c0-7.18-5.82-13-13-13h0Z"
-          />
-        </svg>
-
-        {/* Right Cap */}
-        <svg
-          className="h-full aspect-[70.82/112.65] flex-shrink-0"
-          viewBox="240 0 70.82 112.65"
-          preserveAspectRatio="none"
-        >
-          <path
-            fill={colors.fillColor}
-            d="M265.02,110.65c-5.37,0-9.74-4.37-9.74-9.74v-4.6c0-2.42-1.97-4.4-4.4-4.4H13c-6.07,0-11-4.93-11-11V13C2,6.93,6.93,2,13,2h236.74c.11,0,.19.09.19.19v2.84c0,8.27,6.73,15,15,15h10.07c8.27,0,15-6.73,15-15v-2.84c0-.11.09-.19.19-.19h7.63c6.07,0,11,4.93,11,11v67.91c0,6.07-4.93,11-11,11h-8.77c-2.42,0-4.4,1.97-4.4,4.4v4.6c0,5.37-4.37,9.74-9.74,9.74h-9.89Z"
-          />
-          <path
-            fill={colors.strokeColor}
-            d="M297.82,4c4.96,0,9,4.04,9,9v67.91c0,4.96-4.04,9-9,9h-8.77c-3.53,0-6.4,2.87-6.4,6.4v4.6c0,4.27-3.47,7.74-7.74,7.74h-9.89c-4.27,0-7.74-3.47-7.74-7.74v-4.6c0-3.53-2.87-6.4-6.4-6.4H13c-4.96,0-9-4.04-9-9V13c0-4.96,4.04-9,9-9h234.93v1.03c0,9.37,7.63,17,17,17h10.07c9.37,0,17-7.63,17-17v-1.03h5.82M297.82,0h-7.63c-1.21,0-2.19.98-2.19,2.19v2.84c0,7.18-5.82,13-13,13h-10.07c-7.18,0-13-5.82-13-13v-2.84c0-1.21-.98-2.19-2.19-2.19H13C5.82,0,0,5.82,0,13v67.91c0,7.18,5.82,13,13,13h237.88c1.32,0,2.4,1.07,2.4,2.4v4.6c0,6.48,5.26,11.74,11.74,11.74h9.89c6.48,0,11.74-5.26,11.74-11.74v-4.6c0-1.32,1.07-2.4,2.4-2.4h8.77c7.18,0,13-5.82,13-13V13c0-7.18-5.82-13-13-13h0Z"
-          />
-        </svg>
-      </div>
-
-      <div className={`flex items-center gap-1.5 sm:gap-3.5 z-10 ${colors.textColor}`}>
+      <div className={`flex items-center gap-1 sm:gap-2 z-10 ${colors.textColor}`}>
         {renderIcon(instruction.type)}
-        <span className="font-extrabold text-[9px] sm:text-sm tracking-tight font-mono">
+        <span className="font-extrabold text-[9px] sm:text-xs tracking-tight font-mono">
           {config.label}
         </span>
       </div>
