@@ -5,7 +5,9 @@
 
 import React from 'react';
 import { GameLevel, LevelHighScore } from '../../types';
-import { Trophy, Star, ArrowLeft, Play, CheckCircle2, Volume2, VolumeX, X } from 'lucide-react';
+import { ChevronRight, Volume2, VolumeX } from 'lucide-react';
+import logoPusbuk from '@/assets/logo-pusbuk.webp';
+import bgBackground from '@/assets/background.webp';
 
 interface DashboardProps {
   levels: GameLevel[];
@@ -16,6 +18,48 @@ interface DashboardProps {
   onToggleMute: () => void;
 }
 
+const difficultyLabel = (id: number) => {
+  if (id === 1) return { label: 'Mudah', color: 'bg-emerald-100 text-emerald-800 border border-emerald-300' };
+  if (id === 2) return { label: 'Sedang', color: 'bg-amber-100 text-amber-800 border border-amber-300' };
+  return { label: 'Sulit', color: 'bg-rose-100 text-rose-800 border border-rose-300' };
+};
+
+const levelGradients = (id: number) => {
+  if (id === 1) return {
+    bg: 'from-emerald-400 to-teal-500',
+    cardBg: 'bg-emerald-50/90 backdrop-blur-md border-[3px] border-[#0f5a31]',
+    hoverBorder: 'hover:border-[#16a34a]',
+    hoverGlow: 'hover:shadow-emerald-500/10',
+    btnBg: 'bg-[#0f5a31] hover:bg-[#0b4826] border-b-3 border-[#073019] active:border-b-0 active:translate-y-[3px]',
+    badgeBg: 'bg-emerald-100 text-emerald-800 border border-emerald-200',
+    statsBg: 'bg-emerald-100/60 text-emerald-900 border border-emerald-300/50',
+    accentText: 'text-[#0f5a31]',
+    hoverTitle: 'group-hover:text-[#0f5a31]',
+  };
+  if (id === 2) return {
+    bg: 'from-amber-400 to-orange-500',
+    cardBg: 'bg-amber-50/90 backdrop-blur-md border-[3px] border-[#b45309]',
+    hoverBorder: 'hover:border-[#ea580c]',
+    hoverGlow: 'hover:shadow-amber-500/10',
+    btnBg: 'bg-[#b45309] hover:bg-[#9a3412] border-b-3 border-[#7c2d12] active:border-b-0 active:translate-y-[3px]',
+    badgeBg: 'bg-amber-100 text-amber-800 border border-amber-200',
+    statsBg: 'bg-amber-100/60 text-amber-900 border border-amber-300/50',
+    accentText: 'text-[#b45309]',
+    hoverTitle: 'group-hover:text-[#b45309]',
+  };
+  return {
+    bg: 'from-rose-400 to-pink-500',
+    cardBg: 'bg-rose-50/90 backdrop-blur-md border-[3px] border-[#be123c]',
+    hoverBorder: 'hover:border-[#e11d48]',
+    hoverGlow: 'hover:shadow-rose-500/10',
+    btnBg: 'bg-[#be123c] hover:bg-[#9f1239] border-b-3 border-[#881337] active:border-b-0 active:translate-y-[3px]',
+    badgeBg: 'bg-rose-100 text-rose-800 border border-rose-200',
+    statsBg: 'bg-rose-100/60 text-rose-900 border border-rose-300/50',
+    accentText: 'text-[#be123c]',
+    hoverTitle: 'group-hover:text-[#be123c]',
+  };
+};
+
 export default function Dashboard({
   levels,
   highScores,
@@ -24,210 +68,110 @@ export default function Dashboard({
   isMuted,
   onToggleMute
 }: DashboardProps) {
-  const completedCount = Object.values(highScores).filter(s => s.completed).length;
-  const totalStars = Object.values(highScores).reduce((sum, s) => sum + (s.stars || 0), 0);
-  const maxStars = levels.length * 3;
-
-  const [showStatsModal, setShowStatsModal] = React.useState(false);
-
   return (
-    <div className="min-h-screen bg-[#FEF8F0] text-stone-900 flex flex-col selection:bg-indigo-500/30 font-sans leading-relaxed relative">
-      {/* Floating Back Button */}
-      <button
-        onClick={onBack}
-        className="fixed top-4 left-4 z-40 p-2.5 rounded-xl border border-[#EED4B7] bg-white hover:bg-stone-50 text-stone-600 transition-all cursor-pointer shadow-md active:scale-95 hover:scale-[1.02]"
-        title="Kembali ke Splash Screen"
-      >
-        <ArrowLeft className="w-4 h-4" />
-      </button>
+    <div className="h-screen w-full flex flex-col justify-center items-center relative overflow-hidden antialiased py-0 px-0 lg:py-6 lg:px-6 xl:py-8 xl:px-8 select-none bg-stone-900">
+      {/* Background Image with blur & opacity-60 */}
+      <div 
+        className="absolute inset-0 bg-cover bg-center opacity-60 backdrop-blur-md pointer-events-none"
+        style={{ backgroundImage: `url(${bgBackground})` }}
+      />
+      {/* Pusbuk Logo - Top Left */}
+      <div className="absolute top-2.5 left-2.5 sm:top-4 sm:left-4 md:top-6 md:left-6 z-30">
+        <img 
+          src={logoPusbuk} 
+          alt="Logo Pusbuk" 
+          className="h-7 sm:h-10 md:h-14 lg:h-16 w-auto object-contain transition-transform duration-300 hover:scale-105"
+        />
+      </div>
 
-      {/* Floating Header Controls */}
-      <div className="fixed top-4 right-4 z-40 flex items-center gap-2">
-        {/* Progress Stats Button */}
-        <button
-          onClick={() => setShowStatsModal(true)}
-          className="p-2.5 rounded-xl border border-[#EED4B7] bg-white hover:bg-stone-50 text-indigo-650 transition-all cursor-pointer shadow-md active:scale-95 hover:scale-[1.02]"
-          title="Tampilkan Statistik Progress"
-        >
-          <Trophy className="w-4.5 h-4.5" />
-        </button>
-
-        {/* Mute button */}
+      {/* Sound Toggle - Top Right */}
+      <div className="absolute top-2.5 right-2.5 sm:top-4 sm:right-4 md:top-6 md:right-6 z-30 flex items-center gap-2 sm:gap-2.5">
         <button
           onClick={onToggleMute}
-          className="p-2.5 rounded-xl border border-[#EED4B7] bg-white hover:bg-stone-50 text-stone-600 transition-all cursor-pointer shadow-md active:scale-95 hover:scale-[1.02]"
-          title={isMuted ? 'Nyalakan Audio' : 'Matikan Audio'}
+          className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-white/80 backdrop-blur-md border border-[#EED4B7] rounded-xl sm:rounded-2xl flex items-center justify-center text-stone-600 hover:text-amber-600 hover:bg-white hover:border-amber-300 hover:shadow-lg transition-all duration-300 active:scale-90 cursor-pointer group"
+          title={isMuted ? 'Nyalakan Suara' : 'Matikan Suara'}
         >
-          {isMuted ? <VolumeX className="w-4 h-4 text-rose-500" /> : <Volume2 className="w-4 h-4 text-indigo-600" />}
+          {isMuted ? (
+            <VolumeX className="w-4 h-4 sm:w-5 sm:h-5 md:w-5.5 md:h-5.5 text-rose-500" />
+          ) : (
+            <Volume2 className="w-4 h-4 sm:w-5 sm:h-5 md:w-5.5 md:h-5.5 text-indigo-600" />
+          )}
         </button>
       </div>
 
-      {/* Main Container */}
-      <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 pt-20 sm:pt-24 space-y-8">
+      {/* Main Container Wrapper */}
+      <div className="z-10 w-full max-w-5xl bg-transparent lg:bg-white/50 lg:backdrop-blur-md border-0 lg:border-[3px] md:border-[5px] border-transparent lg:border-[#0f5a31] rounded-none lg:rounded-2xl md:rounded-[24px] shadow-none lg:shadow-2xl lg:overflow-hidden flex flex-col p-2 lg:p-10 justify-center min-h-0 animate-fade-in transition-all duration-500">
+        
+        {/* Header Title */}
+        <header className="w-fit lg:max-w-none mx-auto flex flex-col items-center text-center shrink-0 bg-white/80 backdrop-blur-md border-[3px] border-[#0f5a31] rounded-2xl shadow-md py-1.5 px-6 mb-3 lg:bg-transparent lg:backdrop-blur-none lg:border-0 lg:shadow-none lg:p-0 lg:mb-4">
+          <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-black font-display tracking-wide text-amber-950 leading-tight drop-shadow-sm select-none">
+            Pilih Level
+          </h1>
+        </header>
 
-        {/* Level List Grid */}
-        <div className="space-y-4">
-          <h2 className="text-sm font-bold text-gray-500 uppercase tracking-widest font-mono">
-            Daftar Misi Pemilahan Sampah
-          </h2>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {levels.map((level) => {
+        {/* 3 Level Cards Grid */}
+        <main className="w-full min-h-0">
+          <div className="w-full grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4 lg:gap-5 px-0 pb-0 min-h-0">
+            {levels.slice(0, 3).map((level) => {
+              const diff = difficultyLabel(level.id);
+              const theme = levelGradients(level.id);
               const score = highScores[level.id];
               const isCompleted = score?.completed;
-              const stars = score?.stars || 0;
 
               return (
                 <div
                   key={level.id}
-                  className="bg-white border border-[#EED4B7] transition-all rounded-3xl p-5 flex flex-col justify-between shadow-md relative overflow-hidden group hover:border-indigo-400 hover:scale-[1.01]"
-                  id={`dashboard-level-card-${level.id}`}
+                  onClick={() => onSelectLevel(level.id)}
+                  className={`${theme.cardBg} rounded-2xl sm:rounded-3xl p-4 sm:p-5 md:p-6 text-left flex flex-col justify-between shadow-sm hover:shadow-xl ${theme.hoverBorder} ${theme.hoverGlow} hover:-translate-y-1.5 transition-all duration-500 active:scale-98 group cursor-pointer relative overflow-hidden w-full min-h-[160px] sm:min-h-[200px] md:min-h-[260px]`}
                 >
-                  {/* Decorative background glow on group hover */}
-                  <div className="absolute -top-[50%] -right-[30%] w-[60%] aspect-square rounded-full bg-indigo-50/50 blur-3xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
-
-                  <div className="space-y-4 z-10">
-                    {/* Top Level Info */}
-                    <div className="flex justify-between items-start gap-2">
-                      <span className="px-2.5 py-1 bg-[#FEF8F0] border border-[#EED4B7]/70 rounded-lg text-[10px] font-bold text-indigo-700 tracking-wider font-mono uppercase">
-                        Level {level.id}
+                  {/* Card Top: Level Number + Difficulty Badge */}
+                  <div className="flex items-start justify-between shrink-0">
+                    <div className="flex flex-col">
+                      <span className="text-[9px] lg:text-[10px] font-black text-stone-500 tracking-wider uppercase font-display mb-0.5">
+                        Level
                       </span>
-                      {isCompleted && (
-                        <div className="flex items-center gap-1 text-[10px] text-emerald-700 font-semibold bg-emerald-50 border border-emerald-250 px-2 py-0.5 rounded-full">
-                          <CheckCircle2 className="w-3.5 h-3.5 fill-emerald-500/10" />
-                          Selesai
-                        </div>
-                      )}
+                      <span className={`text-2xl lg:text-4xl font-black font-display leading-none bg-gradient-to-br ${theme.bg} bg-clip-text text-transparent`}>
+                        {level.id < 10 ? `0${level.id}` : level.id}
+                      </span>
                     </div>
-
-                    {/* Level Name */}
-                    <div>
-                      <h3 className="text-base font-extrabold text-amber-955 font-sans tracking-tight group-hover:text-indigo-600 transition-colors">
-                        {level.name.split('. ').slice(1).join('. ') || level.name}
-                      </h3>
-                      <p className="text-xs text-stone-500 mt-1.5 leading-relaxed line-clamp-2">
-                        {level.description}
-                      </p>
-                    </div>
-
-                    {/* Level Details Specs */}
-                    <div className="grid grid-cols-2 gap-2 text-[10px] font-mono text-stone-500 border-t border-b border-[#FEF8F0] py-2.5">
-                      <div>
-                        Ukuran Peta: <span className="text-stone-800 font-bold">{level.gridSize.width} × {level.gridSize.height}</span>
-                      </div>
-                      <div>
-                        Kapasitas Tas: <span className="text-stone-800 font-bold">{level.maxCapacity} Sampah</span>
-                      </div>
-                      <div>
-                        Batas Blok: <span className="text-stone-800 font-bold">{level.maxInstructions} Baris</span>
-                      </div>
-                      {isCompleted && score.minSteps && (
-                        <div>
-                          Skor Terbaik: <span className="text-emerald-600 font-extrabold">{score.minSteps} lgh</span>
-                        </div>
-                      )}
-                    </div>
+                    <span className={`text-[10px] lg:text-xs font-black px-2.5 sm:px-3 py-0.5 lg:py-1 rounded-full ${diff.color}`}>
+                      {diff.label}
+                    </span>
                   </div>
 
-                  {/* Stars Rating & Main Action Button */}
-                  <div className="flex items-center justify-between mt-5 pt-3.5 border-t border-[#FEF8F0] z-10">
-                    <div className="flex items-center gap-1">
-                      {[1, 2, 3].map((star) => (
-                        <Star
-                          key={star}
-                          className={`w-4 h-4 ${
-                            star <= stars
-                              ? 'text-amber-500 fill-amber-500'
-                              : 'text-stone-200'
-                          }`}
-                        />
-                      ))}
+                  {/* Level Title & Description */}
+                  <div className="my-2 lg:my-4 shrink-0">
+                    <h3 className={`font-black text-amber-955 text-sm sm:text-base md:text-lg leading-tight font-display tracking-wide ${theme.hoverTitle} transition-colors`}>
+                      {level.name.replace(/^\d+\.\s*/, '')}
+                    </h3>
+                  </div>
+
+                  {/* Stats Badges + Action Button */}
+                  <div className="mt-auto shrink-0">
+                    <div className="flex flex-wrap gap-1 sm:gap-1.5 mb-3">
+                      <span className={`inline-flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-lg sm:rounded-xl ${theme.statsBg} font-bold text-[9px] lg:text-xs`}>
+                        📦 {level.trashItems.length} Sampah
+                      </span>
+                      <span className={`inline-flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-lg sm:rounded-xl ${theme.statsBg} font-bold text-[9px] lg:text-xs`}>
+                        🧩 Max {level.maxInstructions} Blok
+                      </span>
                     </div>
 
-                    <button
-                      onClick={() => onSelectLevel(level.id)}
-                      className="px-4 py-2 bg-[#00ADEF] hover:bg-[#009CD7] text-white rounded-xl text-xs font-bold flex items-center gap-1 hover:gap-1.5 transition-all shadow-sm cursor-pointer active:scale-95 border border-[#009CD7]"
-                    >
-                      {isCompleted ? 'Main Ulang' : 'Mulai Misi'}
-                      <Play className="w-3 h-3 fill-white" />
+                    <button className={`w-full py-2 sm:py-2.5 pl-3 sm:pl-5 pr-2 rounded-xl sm:rounded-2xl text-white font-bold text-xs sm:text-sm flex items-center justify-between shadow-md transition-all duration-300 hover:shadow-lg active:scale-98 cursor-pointer group/btn border border-white/10 ${theme.btnBg}`}>
+                      <span className="font-display tracking-wider">
+                        {isCompleted ? 'Main Ulang' : 'Mulai Bermain'}
+                      </span>
+                      <span className="w-6 h-6 sm:w-7 sm:h-7 bg-white/20 rounded-full flex items-center justify-center group-hover/btn:bg-white/35 group-hover/btn:translate-x-0.5 transition-all shrink-0">
+                        <ChevronRight className="w-4 h-4 text-white" />
+                      </span>
                     </button>
                   </div>
                 </div>
               );
             })}
           </div>
-        </div>
-      </main>
-
-      {/* Modal: Progress Statistics */}
-      {showStatsModal && (
-        <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4 backdrop-blur-sm overflow-y-auto animate-fade-in" id="dashboard-stats-modal-backdrop">
-          <div className="bg-white border border-[#EED4B7] rounded-3xl p-6 sm:p-8 max-w-sm w-full shadow-2xl relative flex flex-col my-auto animate-scale-up text-center" id="dashboard-stats-modal">
-            <button
-              onClick={() => setShowStatsModal(false)}
-              className="absolute top-4 right-4 p-1.5 hover:bg-stone-100 rounded-lg text-stone-500 hover:text-stone-850 transition-colors cursor-pointer"
-            >
-              <X className="w-5 h-5" />
-            </button>
-
-            <h3 className="text-lg font-bold text-amber-955 mb-4">Statistik Progress</h3>
-
-            <div className="space-y-3.5">
-              {/* Card 1: Total Progress */}
-              <div className="bg-[#FEF8F0] border border-[#EED4B7]/70 rounded-2xl p-4 flex items-center gap-4 text-left">
-                <div className="w-11 h-11 rounded-xl bg-indigo-50 border border-indigo-200 flex items-center justify-center text-xl text-indigo-600">
-                  🏆
-                </div>
-                <div>
-                  <span className="text-[9px] text-stone-500 uppercase font-mono tracking-wider block font-bold">Misi Terselesaikan</span>
-                  <span className="text-base font-bold font-sans text-stone-850">
-                    {completedCount} <span className="text-xs text-stone-400 font-normal font-sans">/ {levels.length} Level</span>
-                  </span>
-                </div>
-              </div>
-
-              {/* Card 2: Star statistics */}
-              <div className="bg-[#FEF8F0] border border-[#EED4B7]/70 rounded-2xl p-4 flex items-center gap-4 text-left">
-                <div className="w-11 h-11 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-center text-xl text-amber-500">
-                  ⭐
-                </div>
-                <div>
-                  <span className="text-[9px] text-stone-500 uppercase font-mono tracking-wider block font-bold">Total Bintang</span>
-                  <span className="text-base font-bold font-sans text-stone-850">
-                    {totalStars} <span className="text-xs text-stone-400 font-normal font-sans">/ {maxStars} Bintang</span>
-                  </span>
-                </div>
-              </div>
-
-              {/* Card 3: Status Badge */}
-              <div className="bg-[#FEF8F0] border border-[#EED4B7]/70 rounded-2xl p-4 flex items-center gap-4 text-left">
-                <div className="w-11 h-11 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-xl text-emerald-600">
-                  🧠
-                </div>
-                <div>
-                  <span className="text-[9px] text-stone-500 uppercase font-mono tracking-wider block font-bold">Predikat Berpikir</span>
-                  <span className="text-xs sm:text-sm font-bold font-sans text-stone-855 block">
-                    {totalStars >= levels.length * 2.5
-                      ? 'Master Algoritme'
-                      : totalStars >= levels.length * 1.5
-                      ? 'Logikawan Berbakat'
-                      : completedCount > 0
-                      ? 'Pemula Komputasional'
-                      : 'Siap Belajar'}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            <button
-              onClick={() => setShowStatsModal(false)}
-              className="mt-6 w-full py-3 bg-indigo-650 hover:bg-indigo-600 border border-indigo-700 text-white rounded-xl text-xs font-bold transition-colors cursor-pointer shadow-md"
-            >
-              Tutup
-            </button>
-          </div>
-        </div>
-      )}
+        </main>
+      </div>
     </div>
   );
 }

@@ -22,7 +22,8 @@ import charB3Ambil from '../../../../assets/merah-ambil.svg';
 
 import tongOrganik from '../../../../assets/wadah-hijau.svg';
 import tongAnorganik from '../../../../assets/wadah-kuning.svg';
-import charOrganikWalk from '../../../../assets/hijau-walk.webm';
+import charOrganikWalk from '../../../../assets/char_organik_walk.webm';
+import charOrganikPick from '../../../../assets/char_organik_pick.webm';
 import tongB3 from '../../../../assets/wadah-merah.svg';
 
 // Import trash item SVG assets
@@ -62,7 +63,7 @@ const CHARACTER_COLORS: Record<CharacterId, { bg: string; border: string; eye: s
     bg: '#10B981', // emerald-500
     border: '#047857', // emerald-700
     eye: '#ffffff',
-    label: 'Robot Pemilah',
+    label: 'Tukang Sampah',
   },
   RECYCLABLE: {
     bg: '#F59E0B', // amber-500
@@ -211,8 +212,7 @@ export default function GridMap({
   const dragStart = useRef({ x: 0, y: 0 });
   const offsetAtDragStart = useRef({ x: 0, y: 0 });
 
-  // Tooltip state
-  const [tooltip, setTooltip] = useState<{ text: string; x: number; y: number } | null>(null);
+
 
   // Backpack overlay visibility state
   const [showBackpack, setShowBackpack] = useState(true);
@@ -221,8 +221,9 @@ export default function GridMap({
   const [imagesLoaded, setImagesLoaded] = useState(false);
   const imagesRef = useRef<Record<string, HTMLImageElement>>({});
 
-  // WebM walking animation ref for the green robot
+  // WebM animation refs for the green robot
   const walkVideoRef = useRef<HTMLVideoElement | null>(null);
+  const pickVideoRef = useRef<HTMLVideoElement | null>(null);
   const chromaCanvasRef = useRef<HTMLCanvasElement | null>(null);
 
   if (!chromaCanvasRef.current && typeof document !== 'undefined') {
@@ -230,16 +231,33 @@ export default function GridMap({
   }
 
   useEffect(() => {
-    const video = document.createElement('video');
-    video.src = charOrganikWalk;
-    video.loop = true;
-    video.muted = true;
-    video.playsInline = true;
-    video.setAttribute('webkit-playsinline', 'true');
-    video.load();
-    walkVideoRef.current = video;
+    const walkVid = document.createElement('video');
+    walkVid.src = charOrganikWalk;
+    walkVid.loop = true;
+    walkVid.muted = true;
+    walkVid.playsInline = true;
+    walkVid.setAttribute('webkit-playsinline', 'true');
+    walkVid.preload = 'auto';
+    // Seek to the first frame once data is ready so idle character is visible
+    walkVid.addEventListener('loadeddata', () => {
+      walkVid.currentTime = 0;
+    });
+    walkVid.load();
+    walkVideoRef.current = walkVid;
+
+    const pickVid = document.createElement('video');
+    pickVid.src = charOrganikPick;
+    pickVid.loop = false;
+    pickVid.muted = true;
+    pickVid.playsInline = true;
+    pickVid.setAttribute('webkit-playsinline', 'true');
+    pickVid.preload = 'auto';
+    pickVid.load();
+    pickVideoRef.current = pickVid;
+
     return () => {
-      video.pause();
+      walkVid.pause();
+      pickVid.pause();
     };
   }, []);
 
@@ -486,20 +504,38 @@ export default function GridMap({
         renderY -= bob;
       }
 
-      // Sync WebM walk animation state for ORGANIC character
+      // Sync WebM animation states for ORGANIC character
       if (c.id === 'ORGANIC') {
-        const video = walkVideoRef.current;
-        if (video) {
-          const isMoving = isExecuting && (c.activeAction === 'LEFT' || c.activeAction === 'RIGHT' || c.activeAction === 'UP');
-          if (isMoving) {
-            if (video.paused) {
-              video.play().catch(() => {});
+        const walkVideo = walkVideoRef.current;
+        const pickVideo = pickVideoRef.current;
+        const isPicking = c.activeAction === 'PICK' || c.activeAction === 'DROP';
+        const isMoving = isExecuting && (c.activeAction === 'LEFT' || c.activeAction === 'RIGHT' || c.activeAction === 'UP');
+
+        if (walkVideo) {
+          if (isMoving && !isPicking) {
+            if (walkVideo.paused) walkVideo.play().catch(() => {});
+          } else {
+            if (!walkVideo.paused) {
+              walkVideo.pause();
+              walkVideo.currentTime = 0;
+            }
+          }
+        }
+
+        if (pickVideo) {
+          if (isPicking) {
+            // Only play if paused AND not already ended (prevents restart loop)
+            if (pickVideo.paused && !pickVideo.ended) {
+              pickVideo.currentTime = 0;
+              pickVideo.play().catch(() => {});
             }
           } else {
-            if (!video.paused) {
-              video.pause();
-              video.currentTime = 0; // Grab the first frame / start of video
+            // Reset when no longer picking
+            if (!pickVideo.paused) {
+              pickVideo.pause();
             }
+            pickVideo.currentTime = 0;
+            // Clear ended state so it can play again on next PICK
           }
         }
       }
@@ -525,18 +561,21 @@ export default function GridMap({
     const charH = cellSize * 2.3; // Taller character: 2.3 cells tall
 
     // Render using WebM video for ORGANIC green robot
-    if (character.id === 'ORGANIC' && walkVideoRef.current) {
-      ctx.save();
-      ctx.translate(rx, ry);
+    if (character.id === 'ORGANIC') {
+      const activeVideo = isPicking ? pickVideoRef.current : walkVideoRef.current;
+      if (activeVideo) {
+        ctx.save();
+        ctx.translate(rx, ry);
 
-      // Flip character horizontally if facing left
-      if (character.facingDir === 'LEFT') {
-        ctx.scale(-1, 1);
+        // Flip character horizontally if facing left
+        if (character.facingDir === 'LEFT') {
+          ctx.scale(-1, 1);
+        }
+
+        drawVideoContain(ctx, activeVideo, 0, 0, charW, charH, chromaCanvasRef.current);
+        ctx.restore();
+        return;
       }
-
-      drawVideoContain(ctx, walkVideoRef.current, 0, 0, charW, charH, chromaCanvasRef.current);
-      ctx.restore();
-      return;
     }
 
     if (characterImg) {
@@ -664,32 +703,7 @@ export default function GridMap({
     const gx = Math.floor((mx - padX) / cellSizeVal);
     const gy = Math.floor((my - padY) / cellSizeVal);
 
-    if (gx >= 0 && gx < width && gy >= 0 && gy < height) {
-      const characterHere = characters.find(c => c.pos.x === gx && c.pos.y === gy);
-      const hasTrash = trashItems.find(t => t.pos.x === gx && t.pos.y === gy && !t.collected);
-      const hasCan = trashCans.find(tc => tc.pos.x === gx && tc.pos.y === gy);
-      const hasObs = obstacles.find(o => o.pos.x === gx && o.pos.y === gy);
 
-      if (characterHere || hasTrash || hasCan || hasObs) {
-        let text = '';
-        if (characterHere) text = `(${gx}, ${gy})`;
-        else if (hasTrash) text = `${hasTrash.item.name} — ${hasTrash.item.emoji}`;
-        else if (hasCan) text = `Tong ${hasCan.label} ${hasCan.emoji}`;
-        else if (hasObs) {
-          const obsLabel = hasObs.type === 'rock' ? 'Batu' : hasObs.type === 'water' ? 'Air' : hasObs.type === 'bush' ? 'Semak' : hasObs.type === 'wall' ? 'Dinding' : hasObs.type;
-          text = `${obsLabel} ${hasObs.emoji}`;
-        }
-
-        // Position tooltip below cursor with safe bounds
-        const tx = Math.min(e.clientX - rect.left + 12, rect.width - 160);
-        const ty = Math.min(e.clientY - rect.top + 20, rect.height - 32);
-        setTooltip({ text, x: tx, y: ty });
-      } else {
-        setTooltip(null);
-      }
-    } else {
-      setTooltip(null);
-    }
   }, [width, height, offset, zoom, characters, trashItems, trashCans, obstacles, getCellSize]);
 
   const handleMouseUp = useCallback(() => {
@@ -698,7 +712,6 @@ export default function GridMap({
 
   const handleMouseLeave = useCallback(() => {
     isDragging.current = false;
-    setTooltip(null);
   }, []);
 
   function hexToRgba(hex: string, alpha: number): string {
@@ -788,15 +801,7 @@ export default function GridMap({
           </div>
         </div>
 
-        {/* Tooltip */}
-        {tooltip && (
-          <div
-            className="absolute z-20 px-2.5 py-1.5 bg-gray-900/90 text-white text-[11px] font-mono rounded-lg pointer-events-none whitespace-nowrap shadow-lg"
-            style={{ left: tooltip.x, top: tooltip.y }}
-          >
-            {tooltip.text}
-          </div>
-        )}
+
 
         {/* Multi-character Backpack overlay */}
         {showBackpack && (

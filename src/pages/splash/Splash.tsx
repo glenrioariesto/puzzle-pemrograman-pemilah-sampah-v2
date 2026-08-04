@@ -4,19 +4,27 @@
  */
 
 import React from 'react';
-import { ArrowRight, Volume2, VolumeX, BookOpen } from 'lucide-react';
+import { Volume2, VolumeX } from 'lucide-react';
 import logoPusbuk from '@/assets/logo-pusbuk.webp';
+import bgBackground from '@/assets/background.webp';
+import imgTitleTop from '@/assets/title-top.webp';
+import imgTitleBottom from '@/assets/title-bottom.webp';
 
 interface SplashProps {
   onStart: () => void;
   isMuted: boolean;
   onToggleMute: () => void;
-  onShowHowToPlay: () => void;
 }
 
-export default function Splash({ onStart, isMuted, onToggleMute, onShowHowToPlay }: SplashProps) {
+export default function Splash({ onStart, isMuted, onToggleMute }: SplashProps) {
   return (
-    <div className="relative max-h-screen h-screen w-full flex flex-col items-center justify-center p-6 text-center overflow-hidden bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-[#FCDCB5]/10 via-[#FEF8F0] to-[#FEF8F0] selection:bg-indigo-500/30 font-sans leading-relaxed">
+    <div className="relative max-h-screen h-screen w-full flex flex-col items-center justify-center p-6 text-center overflow-hidden selection:bg-indigo-500/30 font-sans leading-relaxed bg-stone-900">
+      {/* Background Image with blur & opacity-60 */}
+      <div 
+        className="absolute inset-0 bg-cover bg-center opacity-60 backdrop-blur-md pointer-events-none"
+        style={{ backgroundImage: `url(${bgBackground})` }}
+      />
+
       {/* Pusbuk Logo on Absolute Top Left */}
       <div className="absolute top-3 left-3 sm:top-5 sm:left-5 z-50 shrink-0 animate-fade-in">
         <img 
@@ -26,50 +34,39 @@ export default function Splash({ onStart, isMuted, onToggleMute, onShowHowToPlay
         />
       </div>
 
-      {/* Top Right Controls (Panduan & Sound) */}
-      <div className="absolute top-6 right-6 flex items-center gap-2 animate-fade-in">
+      {/* Sound Toggle Button on Absolute Top Right */}
+      <div className="absolute top-6 right-6 z-50 flex items-center gap-2 animate-fade-in">
         <button
           onClick={onToggleMute}
-          className="p-2.5 rounded-xl border border-[#EED4B7] bg-white hover:bg-stone-50 text-stone-600 transition-all cursor-pointer shadow-sm"
+          className="p-2.5 rounded-xl border border-[#EED4B7] bg-white/90 hover:bg-white text-stone-600 transition-all cursor-pointer shadow-md"
           title={isMuted ? 'Nyalakan Audio' : 'Matikan Audio'}
         >
           {isMuted ? <VolumeX className="w-4 h-4 text-rose-500" /> : <Volume2 className="w-4 h-4 text-indigo-600" />}
         </button>
-
-        <button
-          onClick={onShowHowToPlay}
-          className="px-3 py-2 rounded-xl bg-indigo-50 border border-indigo-200 text-indigo-700 font-semibold text-xs flex items-center gap-1.5 hover:bg-indigo-100 transition-colors cursor-pointer shadow-sm"
-        >
-          <BookOpen className="w-3.5 h-3.5" /> Cara Bermain
-        </button>
       </div>
 
-      {/* Background Decorative Glow Circles */}
-      <div className="absolute -top-[20%] -left-[20%] w-[60%] aspect-square rounded-full bg-[#FCDCB5]/15 blur-[120px] pointer-events-none"></div>
-      <div className="absolute -bottom-[20%] -right-[20%] w-[60%] aspect-square rounded-full bg-[#00ADEF]/5 blur-[120px] pointer-events-none"></div>
-
       {/* Centered Splash Hero Panel */}
-      <div className="z-10 max-w-xl flex flex-col items-center">
-        {/* Heading */}
-        <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight text-amber-950 leading-tight mb-5 animate-scale-up">
-          Pilah Sampah,<br className="sm:hidden" /> Kuasai Logika!
-        </h1>
+      <div className="z-10 max-w-2xl flex flex-col items-center gap-6 animate-scale-up">
+        {/* Title Graphic (title-top.webp) */}
+        <img 
+          src={imgTitleTop} 
+          alt="Title Top" 
+          className="w-auto max-w-[85vw] sm:max-w-md md:max-w-lg lg:max-w-xl h-auto object-contain drop-shadow-2xl"
+        />
 
-        {/* Shorter Subtext description */}
-        <p className="text-xs sm:text-sm md:text-base text-gray-500 max-w-md sm:max-w-lg leading-relaxed mb-8 px-4 animate-scale-up" style={{ animationDelay: '100ms' }}>
-          Rancang algoritme gerakan petugas kebersihan untuk mengambil dan memilah sampah sesuai wadah yang cocok.
-        </p>
-
-        {/* Start Button */}
-        <div className="animate-scale-up" style={{ animationDelay: '200ms' }}>
-          <button
-            onClick={onStart}
-            className="px-8 py-4 bg-[#00ADEF] hover:bg-[#009CD7] border border-[#009CD7] text-white font-bold text-sm sm:text-base rounded-2xl cursor-pointer shadow-lg active:scale-98 hover:scale-[1.02] transition-all flex items-center gap-2"
-          >
-            Mulai Petualangan <ArrowRight className="w-5 h-5 animate-bounce-horizontal" />
-          </button>
-        </div>
+        {/* Separated Start Button Graphic (title-bottom.webp) */}
+        <button
+          onClick={onStart}
+          className="group relative cursor-pointer active:scale-95 transition-transform duration-200"
+        >
+          <img 
+            src={imgTitleBottom} 
+            alt="Mulai" 
+            className="w-auto max-w-[65vw] sm:max-w-xs md:max-w-sm h-auto object-contain drop-shadow-xl group-hover:scale-105 transition-transform duration-200"
+          />
+        </button>
       </div>
     </div>
   );
 }
+

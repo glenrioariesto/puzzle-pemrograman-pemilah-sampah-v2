@@ -140,12 +140,12 @@ export default function InstructionBlock({
 
   return (
     <div
-      className="relative z-0 flex items-center justify-between py-0.5 pl-5 pr-6 sm:py-1 sm:pl-5 sm:pr-20 h-7 sm:h-11 w-full bg-transparent outline-none select-none"
+      className="relative z-0 flex items-center justify-between py-0.5 pl-6 pr-6 sm:py-1 sm:pl-6 sm:pr-20 h-7 sm:h-11 w-full bg-transparent outline-none select-none"
       id={`block-flat-${instruction.id}`}
     >
       {/* SVG Bubble Background (Horizontal Puzzle Shape) */}
       <svg
-        className="absolute inset-0 w-full h-full -z-10 pointer-events-none select-none"
+        className="absolute inset-0 w-full h-full  min-w-[130px] -z-10 pointer-events-none select-none"
         viewBox="0 0 120 36"
         preserveAspectRatio="none"
       >

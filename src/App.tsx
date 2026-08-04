@@ -175,11 +175,6 @@ export default function App() {
           onStart={handleStartFromSplash}
           isMuted={isMuted}
           onToggleMute={handleToggleMute}
-          onShowHowToPlay={() => {
-            playClickSound();
-            setShowHowToPlayOnArena(true);
-            setPage('arena');
-          }}
         />
       )}
 

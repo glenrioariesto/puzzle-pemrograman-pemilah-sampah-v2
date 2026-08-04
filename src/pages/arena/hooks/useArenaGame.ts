@@ -109,7 +109,7 @@ export function useArenaGame(
 
   // Initialize level upon load
   const getCharacterLabel = (id: CharacterId) => {
-    return 'Robot Pemilah';
+    return 'Tukang Sampah';
   };
 
   useEffect(() => {
@@ -121,8 +121,8 @@ export function useArenaGame(
     activeTrashRef.current = trash;
     setLogs([
       `[Sistem] Memuat Level ${level.id}: ${level.name}`,
-      `[Sistem] Robot Pemilah siap! 🤖`,
-      `[Sistem] Susun program untuk mengendalikan robot.`
+      `[Sistem] Tukang Sampah siap! 🤖`,
+      `[Sistem] Susun program untuk mengendalikan Tukang Sampah.`
     ]);
     setGameResult(null);
     setShowResultModal(false);
@@ -281,7 +281,11 @@ export function useArenaGame(
   const handleStartExecution = () => {
     // Check if any character has a program
     const hasProgram = Object.values(characterStatesRef.current).some(c => c.instructions.length > 0);
-    if (!hasProgram) return;
+    if (!hasProgram) {
+      playSound('fail');
+      setLogs([`[Peringatan] Program masih kosong! Tambahkan blok perintah terlebih dahulu.`]);
+      return;
+    }
     playSound('click');
 
     const newCharacters: Record<CharacterId, CharacterState> = {} as Record<CharacterId, CharacterState>;
@@ -326,7 +330,7 @@ export function useArenaGame(
     const totalCmds = Object.values(newCharacters).reduce((s, c) => s + c.compiledSteps.length, 0);
     setLogs([
       `[Sistem] Memulai simulasi...`,
-      `[Sistem] Robot Pemilah: ${totalCmds} langkah terkompilasi.`
+      `[Sistem] Tukang Sampah: ${totalCmds} langkah terkompilasi.`
     ]);
   };
 
@@ -382,7 +386,7 @@ export function useArenaGame(
     setShowResultModal(false);
     setLogs([
       `[Sistem] Reset: Simulasi diatur ulang & program dikosongkan.`,
-      `[Sistem] Susun program untuk menyusun langkah Robot Pemilah.`
+      `[Sistem] Susun program untuk menyusun langkah Tukang Sampah.`
     ]);
   };
 
@@ -551,59 +555,71 @@ export function useArenaGame(
             newLogs.push(`[Gerakan] ${characterLabel} langkah ${stepNum}: Turun.`);
           }
         } else if (step.action === 'PICK') {
-          // Immediately check if near any uncollected trash
-          const targetX = physics.x;
-          const targetY = physics.y;
-          const foundIdx = currentTrash.findIndex(
-            t => Math.abs(t.pos.x - targetX) <= 1.2 && Math.abs(t.pos.y - targetY) <= 0.6 && !t.collected
-          );
+          if (physics.frameTicks === 1) {
+            // Immediately check if near any uncollected trash at the start of pick step
+            const targetX = physics.x;
+            const targetY = physics.y;
+            const foundIdx = currentTrash.findIndex(
+              t => Math.abs(t.pos.x - targetX) <= 1.2 && Math.abs(t.pos.y - targetY) <= 0.6 && !t.collected
+            );
 
-          if (foundIdx !== -1) {
-            const targetTrash = currentTrash[foundIdx];
-            if (physics.backpack.length >= level.maxCapacity) {
-              playSound('fail');
-              physics.hasErrored = true;
-              character.hasErrored = true;
-              hasError = true;
-              newLogs.push(`[Aksi] ${characterLabel} langkah ${stepNum}: Ingin mengambil ${targetTrash.item.name}.`);
-              newLogs.push(`[Kesalahan] ${characterLabel} gagal! Tas penuh! Kapasitas maksimal ${level.maxCapacity}.`);
+            if (foundIdx !== -1) {
+              const targetTrash = currentTrash[foundIdx];
+              if (physics.backpack.length >= level.maxCapacity) {
+                playSound('fail');
+                physics.hasErrored = true;
+                character.hasErrored = true;
+                hasError = true;
+                newLogs.push(`[Aksi] ${characterLabel} langkah ${stepNum}: Ingin mengambil ${targetTrash.item.name}.`);
+                newLogs.push(`[Kesalahan] ${characterLabel} gagal! Tas penuh! Kapasitas maksimal ${level.maxCapacity}.`);
+              } else {
+                playSound('collect');
+                currentTrash[foundIdx] = { ...targetTrash, collected: true };
+                physics.backpack = [...physics.backpack, targetTrash.item];
+                character.backpack = [...character.backpack, targetTrash.item];
+                newLogs.push(`[Aksi] ${characterLabel} langkah ${stepNum}: Mengambil "${targetTrash.item.name}" ${targetTrash.item.emoji}.`);
+              }
             } else {
-              playSound('collect');
-              currentTrash[foundIdx] = { ...targetTrash, collected: true };
-              physics.backpack = [...physics.backpack, targetTrash.item];
-              character.backpack = [...character.backpack, targetTrash.item];
-              newLogs.push(`[Aksi] ${characterLabel} langkah ${stepNum}: Mengambil "${targetTrash.item.name}" ${targetTrash.item.emoji}.`);
+              newLogs.push(`[Perhatian] ${characterLabel} langkah ${stepNum}: Tidak ada sampah di dekat karakter!`);
             }
-          } else {
-            newLogs.push(`[Perhatian] ${characterLabel} langkah ${stepNum}: Tidak ada sampah di dekat karakter!`);
           }
-          physics.frameTicks = 0;
-          physics.playbackIndex++;
+
+          // PICK animation delay (70 ticks @ 20ms = 1.4s)
+          if (physics.frameTicks >= 70 || physics.hasErrored) {
+            physics.frameTicks = 0;
+            physics.playbackIndex++;
+          }
         } else if (step.action === 'DROP') {
-          const targetX = physics.x;
-          const targetY = physics.y;
-          // Find if there is a trash can nearby
-          const foundCan = level.trashCans.find(
-            tc => Math.abs(tc.pos.x - targetX) <= 1.2 && Math.abs(tc.pos.y - targetY) <= 0.8
-          );
+          if (physics.frameTicks === 1) {
+            const targetX = physics.x;
+            const targetY = physics.y;
+            // Find if there is a trash can nearby
+            const foundCan = level.trashCans.find(
+              tc => Math.abs(tc.pos.x - targetX) <= 1.2 && Math.abs(tc.pos.y - targetY) <= 0.8
+            );
 
-          if (foundCan) {
-            const matchingItems = physics.backpack.filter(item => item.type === foundCan.type);
-            if (matchingItems.length > 0) {
-              playSound('dump');
-              physics.backpack = physics.backpack.filter(item => item.type !== foundCan.type);
-              character.backpack = physics.backpack;
-              newLogs.push(`[Pilah Sukses] ${characterLabel} langkah ${stepNum}: ${matchingItems.length} sampah ${foundCan.label} dibuang ke tong ${foundCan.emoji}!`);
+            if (foundCan) {
+              const matchingItems = physics.backpack.filter(item => item.type === foundCan.type);
+              if (matchingItems.length > 0) {
+                playSound('dump');
+                physics.backpack = physics.backpack.filter(item => item.type !== foundCan.type);
+                character.backpack = physics.backpack;
+                newLogs.push(`[Pilah Sukses] ${characterLabel} langkah ${stepNum}: ${matchingItems.length} sampah ${foundCan.label} dibuang ke tong ${foundCan.emoji}!`);
+              } else {
+                playSound('fail');
+                newLogs.push(`[Aksi] ${characterLabel} langkah ${stepNum}: Di dekat Tong ${foundCan.label} ${foundCan.emoji} tapi tidak membawa sampah jenis ini!`);
+              }
             } else {
-              playSound('fail');
-              newLogs.push(`[Aksi] ${characterLabel} langkah ${stepNum}: Di dekat Tong ${foundCan.label} ${foundCan.emoji} tapi tidak membawa sampah jenis ini!`);
+              playSound('click');
+              newLogs.push(`[Perhatian] ${characterLabel} langkah ${stepNum}: Membuang sampah di tanah kosong!`);
             }
-          } else {
-            playSound('click');
-            newLogs.push(`[Perhatian] ${characterLabel} langkah ${stepNum}: Membuang sampah di tanah kosong!`);
           }
-          physics.frameTicks = 0;
-          physics.playbackIndex++;
+
+          // DROP animation delay (50 ticks @ 20ms = 1.0s)
+          if (physics.frameTicks >= 50) {
+            physics.frameTicks = 0;
+            physics.playbackIndex++;
+          }
         }
 
         // Apply velocities

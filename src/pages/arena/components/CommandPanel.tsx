@@ -22,6 +22,7 @@ import imgAmbil from '../../../../assets/tombol-ambil.svg';
 import imgBuang from '../../../../assets/tombol-buang.svg';
 import imgReset from '../../../../assets/tombol-reset.svg';
 import imgMulai from '../../../../assets/tombol-mulai.svg';
+import imgStop from '../../../../assets/tombol-stop.svg';
 
 interface CommandPanelProps {
   level: GameLevel;
@@ -371,10 +372,10 @@ export default function CommandPanel({
                 <button
                   type="button"
                   onClick={onStopExecution}
-                  className="w-[50%] h-[32px] sm:h-[36px] bg-rose-600 hover:bg-rose-500 border border-rose-700 text-white rounded-xl text-[8px] sm:text-[9px] font-black flex flex-col items-center justify-center cursor-pointer shadow-sm transition-all active:scale-95 gap-0.5"
+                  className="w-[50%] select-none flex items-center justify-center transition-all cursor-pointer p-0 bg-transparent border-none outline-none active:scale-95 hover:scale-[1.02]"
                   id="stop-execution-btn"
                 >
-                  <Square className="w-2.5 h-2.5 fill-white" /> <span className="font-extrabold text-[8px]">Stop</span>
+                  <img src={imgStop} alt="Hentikan" className="w-full h-auto object-contain" />
                 </button>
               ) : (
                 <button
@@ -461,7 +462,7 @@ export default function CommandPanel({
                     }}
                     onPointerDown={(e) => handlePointerDown(e, index)}
                     onDragStart={(e) => e.preventDefault()}
-                    className={`relative z-0 flex items-center justify-between bg-transparent select-none touch-none cursor-grab active:cursor-grabbing hover:brightness-95 transition-all w-[92px] sm:w-[110px] flex-shrink-0 mr-[-14px] sm:mr-[-20px] mb-1.5 ${
+                    className={`relative z-0 flex items-center justify-between bg-transparent select-none touch-none cursor-grab active:cursor-grabbing hover:brightness-95 transition-all w-[92px] sm:w-[110px] flex-shrink-0 mr-[-4px] mb-1.5 ${
                       isDragged ? 'opacity-50' : 'opacity-100'
                     } ${
                       isHoverTarget && !isDragged ? 'ring-2 ring-indigo-500 rounded-xl scale-105 z-10 shadow-lg' : ''
