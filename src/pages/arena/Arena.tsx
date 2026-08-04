@@ -25,7 +25,7 @@ import { X } from 'lucide-react';
 import charOrganik from '@/assets/hijau-angkat.svg';
 import charAnorganik from '@/assets/kuning-angkat.svg';
 import charB3 from '@/assets/merah-angkat.svg';
-import bgBackground from '@/assets/background.webp';
+import bgArenaGame from '@/assets/bg-arena-game.webp';
 
 interface ArenaProps {
   level: GameLevel;
@@ -159,7 +159,7 @@ export default function Arena({
       {/* Background Image with blur & opacity-60 */}
       <div 
         className="absolute inset-0 bg-cover bg-center opacity-60 backdrop-blur-md pointer-events-none"
-        style={{ backgroundImage: `url(${bgBackground})` }}
+        style={{ backgroundImage: `url(${bgArenaGame})` }}
       />
       <RotateDevicePrompt />
 

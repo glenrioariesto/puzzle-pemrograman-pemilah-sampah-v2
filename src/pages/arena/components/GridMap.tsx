@@ -12,14 +12,6 @@ import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { Backpack, HelpCircle } from 'lucide-react';
 import { GridPos, TrashOnGrid, TrashCanOnGrid, ObstacleOnGrid, TrashItem, CharacterId, CommandAction } from '../../../types';
 
-// Import character assets
-import charOrganik from '../../../../assets/hijau-angkat.svg';
-import charOrganikAmbil from '../../../../assets/hijau-ambil.svg';
-import charAnorganik from '../../../../assets/kuning-angkat.svg';
-import charAnorganikAmbil from '../../../../assets/kuning-ambil.svg';
-import charB3 from '../../../../assets/merah-angkat.svg';
-import charB3Ambil from '../../../../assets/merah-ambil.svg';
-
 import tongOrganik from '../../../../assets/wadah-hijau.svg';
 import tongAnorganik from '../../../../assets/wadah-kuning.svg';
 import charOrganikWalk from '../../../../assets/char_organik_walk.webm';
@@ -36,6 +28,7 @@ import svgKertasKoran from '../../../../assets/kertas-koran.svg';
 import svgKulitPisang from '../../../../assets/kulit-pisang.svg';
 import svgLampu from '../../../../assets/lampu.svg';
 import svgSayur from '../../../../assets/sayur.svg';
+import bgGrid from '../../../../assets/bg-grid.webp';
 
 export interface CharacterRenderData {
   id: CharacterId;
@@ -47,6 +40,88 @@ export interface CharacterRenderData {
   activeAction?: CommandAction | null;
 }
 
+export interface ElementSetting {
+  yOffset: number;   // Multiplier for vertical positioning relative to cell size
+  sizeScale: number; // Multiplier for size relative to cell size
+  sizeScaleH?: number; // Optional height multiplier (for characters)
+  sizeScaleW?: number; // Optional width multiplier (for characters)
+}
+
+// Per-asset default configurations (Y-offset & Size scale for EVERY specific asset item)
+export const DEFAULT_ELEMENT_CONFIGS: {
+  // Category defaults
+  defaultCategory: {
+    character: ElementSetting;
+    trash: ElementSetting;
+    trashCan: ElementSetting;
+    obstacle: ElementSetting;
+  };
+  // Per-Character settings
+  characters: Record<string, Partial<ElementSetting>>;
+  // Per-Trash Item settings (by item.id: banana, apple, carrot, can, glass, cd, battery, paint, bulb)
+  trashItems: Record<string, Partial<ElementSetting>>;
+  // Per-Trash Can settings (by type: ORGANIC, RECYCLABLE, B3, RESIDUE)
+  trashCans: Record<string, Partial<ElementSetting>>;
+  // Per-Obstacle settings (by type: rock, bush, wall, water)
+  obstacles: Record<string, Partial<ElementSetting>>;
+} = {
+  defaultCategory: {
+    character: { yOffset: 0.25, sizeScale: 1.0, sizeScaleW: 1.15, sizeScaleH: 2.30 },
+    trash:     { yOffset: 0.80, sizeScale: 0.45 },
+    trashCan:  { yOffset: 0.50, sizeScale: 0.85 },
+    obstacle:  { yOffset: 0.20, sizeScale: 0.60 },
+  },
+
+  // Specific settings per character ID
+  characters: {
+    ORGANIC:    { yOffset: 0.25, sizeScaleW: 1.15, sizeScaleH: 2.30 },
+    RECYCLABLE: { yOffset: 0.25, sizeScaleW: 1.15, sizeScaleH: 2.30 },
+    B3:         { yOffset: 0.25, sizeScaleW: 1.15, sizeScaleH: 2.30 },
+  },
+
+  // Specific settings per trash item ID
+  trashItems: {
+    apple:   { yOffset: 0.80, sizeScale: 0.45 },
+    banana:  { yOffset: 0.80, sizeScale: 0.45 },
+    carrot:  { yOffset: 0.80, sizeScale: 0.45 },
+    can:     { yOffset: 0.80, sizeScale: 0.45 },
+    glass:   { yOffset: 0.80, sizeScale: 0.45 },
+    cd:      { yOffset: 0.80, sizeScale: 0.45 },
+    battery: { yOffset: 0.80, sizeScale: 0.45 },
+    paint:   { yOffset: 0.80, sizeScale: 0.45 },
+    bulb:    { yOffset: 0.80, sizeScale: 0.45 },
+  },
+
+  // Specific settings per trash can type
+  trashCans: {
+    ORGANIC:    { yOffset: 0.50, sizeScale: 0.85 },
+    RECYCLABLE: { yOffset: 0.50, sizeScale: 0.85 },
+    B3:         { yOffset: 0.50, sizeScale: 0.85 },
+    RESIDUE:    { yOffset: 0.50, sizeScale: 0.85 },
+  },
+
+  // Specific settings per obstacle type
+  obstacles: {
+    rock:  { yOffset: 0.20, sizeScale: 0.60 },
+    bush:  { yOffset: 0.20, sizeScale: 0.60 },
+    wall:  { yOffset: 0.20, sizeScale: 0.60 },
+    water: { yOffset: 0.20, sizeScale: 0.60 },
+  },
+};
+
+// Legacy backward compatibility export
+export const DEFAULT_ELEMENT_OFFSETS = {
+  character: DEFAULT_ELEMENT_CONFIGS.defaultCategory.character.yOffset,
+  trash: DEFAULT_ELEMENT_CONFIGS.defaultCategory.trash.yOffset,
+  trashCan: DEFAULT_ELEMENT_CONFIGS.defaultCategory.trashCan.yOffset,
+  obstacle: DEFAULT_ELEMENT_CONFIGS.defaultCategory.obstacle.yOffset,
+  characterScaleW: DEFAULT_ELEMENT_CONFIGS.defaultCategory.character.sizeScaleW!,
+  characterScaleH: DEFAULT_ELEMENT_CONFIGS.defaultCategory.character.sizeScaleH!,
+  trashSizeScale: DEFAULT_ELEMENT_CONFIGS.defaultCategory.trash.sizeScale,
+  trashCanSizeScale: DEFAULT_ELEMENT_CONFIGS.defaultCategory.trashCan.sizeScale,
+  obstacleSizeScale: DEFAULT_ELEMENT_CONFIGS.defaultCategory.obstacle.sizeScale,
+};
+
 interface GridMapProps {
   width: number;
   height: number;
@@ -56,6 +131,7 @@ interface GridMapProps {
   obstacles: ObstacleOnGrid[];
   isExecuting: boolean;
   onShowHints?: () => void;
+  customOffsets?: Partial<typeof DEFAULT_ELEMENT_OFFSETS>;
 }
 
 const CHARACTER_COLORS: Record<CharacterId, { bg: string; border: string; eye: string; label: string }> = {
@@ -201,6 +277,7 @@ export default function GridMap({
   obstacles,
   isExecuting,
   onShowHints,
+  customOffsets,
 }: GridMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -212,10 +289,14 @@ export default function GridMap({
   const dragStart = useRef({ x: 0, y: 0 });
   const offsetAtDragStart = useRef({ x: 0, y: 0 });
 
-
-
   // Backpack overlay visibility state
   const [showBackpack, setShowBackpack] = useState(true);
+
+  // Custom vertical offset & size scale adjustments
+  const [offsets] = useState({
+    ...DEFAULT_ELEMENT_OFFSETS,
+    ...customOffsets,
+  });
 
   // Preload images
   const [imagesLoaded, setImagesLoaded] = useState(false);
@@ -273,12 +354,6 @@ export default function GridMap({
 
   useEffect(() => {
     const sources: Record<string, string> = {
-      ORGANIC_idle: charOrganik,
-      ORGANIC_pick: charOrganikAmbil,
-      RECYCLABLE_idle: charAnorganik,
-      RECYCLABLE_pick: charAnorganikAmbil,
-      B3_idle: charB3,
-      B3_pick: charB3Ambil,
       ORGANIC_can: tongOrganik,
       RECYCLABLE_can: tongAnorganik,
       B3_can: tongB3,
@@ -292,7 +367,7 @@ export default function GridMap({
       cd: svgKertasKoran,
       battery: svgBaterai,
       paint: svgKalengBesi,
-      bulb: svgLampu,
+      bgGrid: bgGrid,
     };
 
     let loadedCount = 0;
@@ -380,58 +455,17 @@ export default function GridMap({
     const findObstacle = (x: number, y: number) =>
       obstacles.find(o => o.pos.x === x && o.pos.y === y);
 
-    // 1. Draw Sky Gradient Background
-    const skyGrad = ctx.createLinearGradient(0, padY, 0, padY + height * cellSizeVal);
-    skyGrad.addColorStop(0, '#bae6fd'); // sky blue top
-    skyGrad.addColorStop(0.75, '#e0f2fe'); // light blue
-    skyGrad.addColorStop(1, '#f0f9ff'); // soft whitish bottom
-    ctx.fillStyle = skyGrad;
-    ctx.fillRect(padX, padY, width * cellSizeVal, height * cellSizeVal);
-
-    // 2. Draw Subtle Column Guidelines (Helps players count distance)
-    ctx.save();
-    ctx.strokeStyle = 'rgba(14, 165, 233, 0.08)'; // soft sky blue lines
-    ctx.lineWidth = 1;
-    ctx.setLineDash([4, 4]);
-    for (let gx = 1; gx < width; gx++) {
-      const lineX = padX + gx * cellSizeVal;
-      ctx.beginPath();
-      ctx.moveTo(lineX, padY);
-      ctx.lineTo(lineX, padY + height * cellSizeVal);
-      ctx.stroke();
-
-      // Soft coordinate numbers at the top of the columns
-      if (cellSizeVal >= 24) {
-        ctx.font = '10px monospace';
-        ctx.fillStyle = 'rgba(14, 165, 233, 0.35)';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'top';
-        ctx.fillText(gx.toString(), lineX, padY + 4);
-      }
-    }
-    ctx.restore();
-
-    // 3. Draw Grass Floor Platform (Row 3 is the floor)
-    const floorY = padY + 3 * cellSizeVal;
-    const floorH = cellSizeVal;
-    
-    // Dirt base
-    ctx.fillStyle = '#78350f'; // rich brown dirt
-    ctx.fillRect(padX, floorY, width * cellSizeVal, floorH);
-    
-    // Top Grass layer
-    ctx.fillStyle = '#22c55e'; // vibrant grass green
-    ctx.fillRect(padX, floorY, width * cellSizeVal, floorH * 0.16);
-
-    // Subtle grassy tufts to make the ground look alive
-    ctx.fillStyle = '#16a34a';
-    for (let gx = 0; gx < width; gx++) {
-      const x = padX + gx * cellSizeVal + cellSizeVal * 0.2;
-      ctx.beginPath();
-      ctx.moveTo(x, floorY);
-      ctx.lineTo(x + 4, floorY - 5);
-      ctx.lineTo(x + 8, floorY);
-      ctx.fill();
+    // 1. Draw Grid Background Image (assets/bg-grid.webp)
+    const bgImg = imagesRef.current['bgGrid'];
+    if (bgImg) {
+      ctx.drawImage(bgImg, padX, padY, width * cellSizeVal, height * cellSizeVal);
+    } else {
+      // Fallback sky background if image hasn't loaded yet
+      const skyGrad = ctx.createLinearGradient(0, padY, 0, padY + height * cellSizeVal);
+      skyGrad.addColorStop(0, '#bae6fd');
+      skyGrad.addColorStop(1, '#f0f9ff');
+      ctx.fillStyle = skyGrad;
+      ctx.fillRect(padX, padY, width * cellSizeVal, height * cellSizeVal);
     }
 
 
@@ -440,30 +474,36 @@ export default function GridMap({
     obstacles.forEach(obs => {
       const { x: cx, y: cy } = toScreen(obs.pos.x, obs.pos.y);
       const cx2 = cx + cellSizeVal / 2;
-      const cy2 = cy - cellSizeVal * 0.15; // Centered to rest on top of the grass floor (y=3)
+      const obsConfig = DEFAULT_ELEMENT_CONFIGS.obstacles[obs.type] || {};
+      const yOffset = obsConfig.yOffset ?? DEFAULT_ELEMENT_CONFIGS.defaultCategory.obstacle.yOffset;
+      const sizeScale = obsConfig.sizeScale ?? DEFAULT_ELEMENT_CONFIGS.defaultCategory.obstacle.sizeScale;
+      const cy2 = cy + cellSizeVal * yOffset;
 
       ctx.save();
-      ctx.font = `${Math.min(cellSizeVal * 0.6, 30)}px sans-serif`;
+      ctx.font = `${Math.min(cellSizeVal * sizeScale, 30)}px sans-serif`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText(obs.emoji, cx2, cy2);
       ctx.restore();
     });
 
-    // 6. Draw Trash Items (Placed on the floor)
+    // 6. Draw Trash Items (Placed on the floor, bottom edge aligned to ground)
     trashItems.forEach(t => {
       if (t.collected) return;
       const { x: cx, y: cy } = toScreen(t.pos.x, t.pos.y);
       const cx2 = cx + cellSizeVal / 2;
-      const cy2 = cy - cellSizeVal * 0.175; // Align bottom edge to stand on top of grass floor (sinking 5% for ground depth)
+      const itemConfig = DEFAULT_ELEMENT_CONFIGS.trashItems[t.item.id] || {};
+      const yOffset = itemConfig.yOffset ?? DEFAULT_ELEMENT_CONFIGS.defaultCategory.trash.yOffset;
+      const sizeScale = itemConfig.sizeScale ?? DEFAULT_ELEMENT_CONFIGS.defaultCategory.trash.sizeScale;
+      const trashSize = cellSizeVal * sizeScale;
+      const cy2 = cy + cellSizeVal * yOffset; 
       const trashImg = imagesRef.current[t.item.id];
 
       ctx.save();
       if (trashImg) {
-        const trashSize = cellSizeVal * 0.45;
         drawImageContain(ctx, trashImg, cx2, cy2, trashSize, trashSize);
       } else {
-        ctx.font = `${Math.min(cellSizeVal * 0.4, 20)}px sans-serif`;
+        ctx.font = `${Math.min(trashSize * 0.8, 20)}px sans-serif`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText(t.item.emoji, cx2, cy2);
@@ -471,20 +511,22 @@ export default function GridMap({
       ctx.restore();
     });
 
-    // 7. Draw Trash Cans (Placed side-by-side on floor)
+    // 7. Draw Trash Cans (Placed side-by-side on floor, bottom edge aligned to ground)
     trashCans.forEach(tc => {
       const { x: cx, y: cy } = toScreen(tc.pos.x, tc.pos.y);
       const cx2 = cx + cellSizeVal / 2;
-      const cy2 = cy - cellSizeVal * 0.375; // Align bottom edge to stand on top of grass floor (sinking 5% for ground depth)
+      const canConfig = DEFAULT_ELEMENT_CONFIGS.trashCans[tc.type] || {};
+      const yOffset = canConfig.yOffset ?? DEFAULT_ELEMENT_CONFIGS.defaultCategory.trashCan.yOffset;
+      const sizeScale = canConfig.sizeScale ?? DEFAULT_ELEMENT_CONFIGS.defaultCategory.trashCan.sizeScale;
+      const canSize = cellSizeVal * sizeScale;
+      const cy2 = cy + cellSizeVal * yOffset; 
       const canKey = `${tc.type}_can`;
       const canImg = imagesRef.current[canKey];
 
       ctx.save();
       if (canImg) {
-        const canSize = cellSizeVal * 0.85;
         drawImageContain(ctx, canImg, cx2, cy2, canSize, canSize);
       } else {
-        const canSize = cellSizeVal * 0.85;
         ctx.font = `${Math.min(canSize * 0.6, 28)}px sans-serif`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
@@ -498,45 +540,34 @@ export default function GridMap({
       let renderX = c.pos.x;
       let renderY = c.pos.y;
 
-      // Apply cute walking bob/bounce when moving LEFT or RIGHT during execution (only for non-WebM characters)
-      if (c.id !== 'ORGANIC' && isExecuting && (c.activeAction === 'LEFT' || c.activeAction === 'RIGHT')) {
-        const bob = Math.abs(Math.sin(performance.now() * 0.015)) * 0.05;
-        renderY -= bob;
-      }
+      // Sync WebM animation states for character
+      const walkVideo = walkVideoRef.current;
+      const pickVideo = pickVideoRef.current;
+      const isPicking = c.activeAction === 'PICK' || c.activeAction === 'DROP';
+      const isMoving = isExecuting && (c.activeAction === 'LEFT' || c.activeAction === 'RIGHT' || c.activeAction === 'UP');
 
-      // Sync WebM animation states for ORGANIC character
-      if (c.id === 'ORGANIC') {
-        const walkVideo = walkVideoRef.current;
-        const pickVideo = pickVideoRef.current;
-        const isPicking = c.activeAction === 'PICK' || c.activeAction === 'DROP';
-        const isMoving = isExecuting && (c.activeAction === 'LEFT' || c.activeAction === 'RIGHT' || c.activeAction === 'UP');
-
-        if (walkVideo) {
-          if (isMoving && !isPicking) {
-            if (walkVideo.paused) walkVideo.play().catch(() => {});
-          } else {
-            if (!walkVideo.paused) {
-              walkVideo.pause();
-              walkVideo.currentTime = 0;
-            }
+      if (walkVideo) {
+        if (isMoving && !isPicking) {
+          if (walkVideo.paused) walkVideo.play().catch(() => {});
+        } else {
+          if (!walkVideo.paused) {
+            walkVideo.pause();
+            walkVideo.currentTime = 0;
           }
         }
+      }
 
-        if (pickVideo) {
-          if (isPicking) {
-            // Only play if paused AND not already ended (prevents restart loop)
-            if (pickVideo.paused && !pickVideo.ended) {
-              pickVideo.currentTime = 0;
-              pickVideo.play().catch(() => {});
-            }
-          } else {
-            // Reset when no longer picking
-            if (!pickVideo.paused) {
-              pickVideo.pause();
-            }
+      if (pickVideo) {
+        if (isPicking) {
+          if (pickVideo.paused && !pickVideo.ended) {
             pickVideo.currentTime = 0;
-            // Clear ended state so it can play again on next PICK
+            pickVideo.play().catch(() => {});
           }
+        } else {
+          if (!pickVideo.paused) {
+            pickVideo.pause();
+          }
+          pickVideo.currentTime = 0;
         }
       }
 
@@ -546,39 +577,25 @@ export default function GridMap({
 
       drawCharacter(ctx, cx, cy, cellSizeVal, c);
     });
-  }, [width, height, characters, trashItems, trashCans, obstacles, isExecuting, zoom, offset, getCellSize, imagesLoaded]);
+  }, [width, height, characters, trashItems, trashCans, obstacles, isExecuting, zoom, offset, getCellSize, imagesLoaded, offsets]);
 
-  // Draw a single character with its WebP asset or vector fallback (2 grid cells height)
+  // Draw a single character using WebM video animation with chroma key
   const drawCharacter = (ctx: CanvasRenderingContext2D, cx: number, cy: number, cellSize: number, character: CharacterRenderData) => {
     const isPicking = character.activeAction === 'PICK' || character.activeAction === 'DROP';
-    const characterKey = `${character.id}_${isPicking ? 'pick' : 'idle'}`;
-    const characterImg = imagesRef.current[characterKey];
+
+    const charConfig = DEFAULT_ELEMENT_CONFIGS.characters[character.id] || {};
+    const yOffset = charConfig.yOffset ?? DEFAULT_ELEMENT_CONFIGS.defaultCategory.character.yOffset;
+    const scaleW = charConfig.sizeScaleW ?? DEFAULT_ELEMENT_CONFIGS.defaultCategory.character.sizeScaleW!;
+    const scaleH = charConfig.sizeScaleH ?? DEFAULT_ELEMENT_CONFIGS.defaultCategory.character.sizeScaleH!;
 
     const rx = cx;
-    const ry = cy - cellSize * 1.10; // Shift character down slightly so feet touch the grass line (y=3)
+    const charW = cellSize * scaleW;
+    const charH = cellSize * scaleH;
+    const ry = cy + cellSize / 2 - charH / 2 + cellSize * yOffset;
 
-    const charW = cellSize * 1.15;
-    const charH = cellSize * 2.3; // Taller character: 2.3 cells tall
-
-    // Render using WebM video for ORGANIC green robot
-    if (character.id === 'ORGANIC') {
-      const activeVideo = isPicking ? pickVideoRef.current : walkVideoRef.current;
-      if (activeVideo) {
-        ctx.save();
-        ctx.translate(rx, ry);
-
-        // Flip character horizontally if facing left
-        if (character.facingDir === 'LEFT') {
-          ctx.scale(-1, 1);
-        }
-
-        drawVideoContain(ctx, activeVideo, 0, 0, charW, charH, chromaCanvasRef.current);
-        ctx.restore();
-        return;
-      }
-    }
-
-    if (characterImg) {
+    // Render using WebM video asset
+    const activeVideo = isPicking ? pickVideoRef.current : walkVideoRef.current;
+    if (activeVideo) {
       ctx.save();
       ctx.translate(rx, ry);
 
@@ -587,33 +604,7 @@ export default function GridMap({
         ctx.scale(-1, 1);
       }
 
-      // SVG asset drawing with contain (preserves aspect ratio)
-      drawImageContain(ctx, characterImg, 0, 0, charW, charH);
-      ctx.restore();
-    } else {
-      const colors = CHARACTER_COLORS[character.id];
-      const w = cellSize * 0.55;
-      const h = cellSize * 1.4; // Tall fallback capsule
-
-      ctx.save();
-      ctx.translate(rx, ry);
-
-      // Body tall capsule
-      ctx.fillStyle = colors.bg;
-      ctx.strokeStyle = colors.border;
-      ctx.lineWidth = 2;
-      roundRectPath(ctx, -w / 2, -h / 2, w, h, w / 2);
-      ctx.fill();
-      ctx.stroke();
-
-      // Initial letter on fallback avatar
-      ctx.fillStyle = '#ffffff';
-      ctx.font = `bold ${w * 0.6}px sans-serif`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      const initial = character.id === 'ORGANIC' ? 'S' : character.id === 'RECYCLABLE' ? 'K' : 'T';
-      ctx.fillText(initial, 0, 0);
-
+      drawVideoContain(ctx, activeVideo, 0, 0, charW, charH, chromaCanvasRef.current);
       ctx.restore();
     }
   };
@@ -749,7 +740,7 @@ export default function GridMap({
       >
         <canvas
           ref={canvasRef}
-          className="block w-full h-full"
+          className="block w-full bg-[#7CCD8F] h-full"
         />
 
         {/* Controls Container (Help + Zoom + Backpack) */}

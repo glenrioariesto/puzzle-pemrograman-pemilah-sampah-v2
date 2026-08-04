@@ -9,6 +9,7 @@ import logoPusbuk from '@/assets/logo-pusbuk.webp';
 import bgBackground from '@/assets/background.webp';
 import imgTitleTop from '@/assets/title-top.webp';
 import imgTitleBottom from '@/assets/title-bottom.webp';
+import imgButtonMulai from '@/assets/button-mulai.webp';
 
 interface SplashProps {
   onStart: () => void;
@@ -21,7 +22,7 @@ export default function Splash({ onStart, isMuted, onToggleMute }: SplashProps) 
     <div className="relative max-h-screen h-screen w-full flex flex-col items-center justify-center p-6 text-center overflow-hidden selection:bg-indigo-500/30 font-sans leading-relaxed bg-stone-900">
       {/* Background Image with blur & opacity-60 */}
       <div 
-        className="absolute inset-0 bg-cover bg-center opacity-60 backdrop-blur-md pointer-events-none"
+        className="absolute inset-0 bg-cover bg-center pointer-events-none"
         style={{ backgroundImage: `url(${bgBackground})` }}
       />
 
@@ -47,22 +48,30 @@ export default function Splash({ onStart, isMuted, onToggleMute }: SplashProps) 
 
       {/* Centered Splash Hero Panel */}
       <div className="z-10 max-w-2xl flex flex-col items-center gap-6 animate-scale-up">
-        {/* Title Graphic (title-top.webp) */}
-        <img 
-          src={imgTitleTop} 
-          alt="Title Top" 
-          className="w-auto max-w-[85vw] sm:max-w-md md:max-w-lg lg:max-w-xl h-auto object-contain drop-shadow-2xl"
-        />
-
-        {/* Separated Start Button Graphic (title-bottom.webp) */}
-        <button
-          onClick={onStart}
-          className="group relative cursor-pointer active:scale-95 transition-transform duration-200"
-        >
+        {/* Floating container for titles to create a smooth bobbing/wiggle effect */}
+        <div className="w-full flex flex-col items-center animate-float-wiggle">
+          <img 
+            src={imgTitleTop} 
+            alt="Title Top" 
+            className="w-auto max-w-sm sm:max-w-sm lg:max-w-3xl 2xl:max-w-5xl h-auto object-contain drop-shadow-2xl select-none pointer-events-none relative z-10 animate-title-1"
+          />
           <img 
             src={imgTitleBottom} 
+            alt="Title Bottom" 
+            className="w-auto max-w-sm sm:max-w-sm lg:max-w-3xl 2xl:max-w-5xl h-auto object-contain drop-shadow-2xl select-none pointer-events-none -mt-4  lg:-mt-8 relative z-20 animate-title-2 "
+          />
+        </div>
+
+        {/* Start Button Graphic (button-mulai.webp) */}
+        <button
+          onClick={onStart}
+          className=" cursor-pointer transform hover:scale-110 active:scale-95 transition-all duration-300 hover:brightness-110 focus:outline-none drop-shadow-2xl animate-[pulse_2s_infinite]"
+          aria-label="Mulai Game"
+        >
+          <img 
+            src={imgButtonMulai} 
             alt="Mulai" 
-            className="w-auto max-w-[65vw] sm:max-w-xs md:max-w-sm h-auto object-contain drop-shadow-xl group-hover:scale-105 transition-transform duration-200"
+            className="w-auto max-w-[20vw] sm:max-w-[20vw] lg:max-w-[240px] h-auto object-contain select-none pointer-events-none"
           />
         </button>
       </div>
