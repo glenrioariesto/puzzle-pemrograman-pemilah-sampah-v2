@@ -225,6 +225,8 @@ function drawVideoContain(
 ) {
   const naturalW = video.videoWidth  || maxW;
   const naturalH = video.videoHeight || maxH;
+  // Guard: skip if dimensions are invalid (video not ready)
+  if (naturalW <= 0 || naturalH <= 0) return;
   const ratio = Math.min(maxW / naturalW, maxH / naturalH);
   const dw = naturalW * ratio;
   const dh = naturalH * ratio;
@@ -468,7 +470,47 @@ export default function GridMap({
       ctx.fillRect(padX, padY, width * cellSizeVal, height * cellSizeVal);
     }
 
+    // 2. Draw thin grid lines using fillRect
+    ctx.save();
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+    // Vertical lines
+    for (let gx = 0; gx <= width; gx++) {
+      const lx = Math.round(padX + gx * cellSizeVal);
+      ctx.fillRect(lx, padY, 1, height * cellSizeVal);
+    }
+    // Horizontal lines
+    for (let gy = 0; gy <= height; gy++) {
+      const ly = Math.round(padY + gy * cellSizeVal);
+      ctx.fillRect(padX, ly, width * cellSizeVal, 1);
+    }
+    ctx.restore();
 
+    // 3. Draw column numbers (top)
+    ctx.save();
+    const labelFontSize = Math.max(9, Math.min(cellSizeVal * 0.28, 14));
+    ctx.font = `bold ${labelFontSize}px sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+    for (let gx = 0; gx < width; gx++) {
+      const sx = padX + gx * cellSizeVal + cellSizeVal / 2;
+      const sy = padY - 4;
+      ctx.fillText(`${gx}`, sx, sy);
+    }
+    ctx.restore();
+
+    // 4. Draw row numbers (left)
+    ctx.save();
+    ctx.font = `bold ${labelFontSize}px sans-serif`;
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+    for (let gy = 0; gy < height; gy++) {
+      const sx = padX - 4;
+      const sy = padY + gy * cellSizeVal + cellSizeVal / 2;
+      ctx.fillText(`${gy}`, sx, sy);
+    }
+    ctx.restore();
 
     // 5. Draw Obstacles (Placed on the floor)
     obstacles.forEach(obs => {
@@ -535,48 +577,53 @@ export default function GridMap({
       ctx.restore();
     });
 
-    // 8. Draw Player Characters
-    characters.forEach(c => {
-      let renderX = c.pos.x;
-      let renderY = c.pos.y;
+    // 8. Draw Player Characters (wrapped in try-catch to prevent errors from blocking grid lines)
+    try {
+      characters.forEach(c => {
+        let renderX = c.pos.x;
+        let renderY = c.pos.y;
 
-      // Sync WebM animation states for character
-      const walkVideo = walkVideoRef.current;
-      const pickVideo = pickVideoRef.current;
-      const isPicking = c.activeAction === 'PICK' || c.activeAction === 'DROP';
-      const isMoving = isExecuting && (c.activeAction === 'LEFT' || c.activeAction === 'RIGHT' || c.activeAction === 'UP');
+        // Sync WebM animation states for character
+        const walkVideo = walkVideoRef.current;
+        const pickVideo = pickVideoRef.current;
+        const isPicking = c.activeAction === 'PICK' || c.activeAction === 'DROP';
+        const isMoving = isExecuting && (c.activeAction === 'LEFT' || c.activeAction === 'RIGHT' || c.activeAction === 'UP');
 
-      if (walkVideo) {
-        if (isMoving && !isPicking) {
-          if (walkVideo.paused) walkVideo.play().catch(() => {});
-        } else {
-          if (!walkVideo.paused) {
-            walkVideo.pause();
-            walkVideo.currentTime = 0;
+        if (walkVideo) {
+          if (isMoving && !isPicking) {
+            if (walkVideo.paused) walkVideo.play().catch(() => {});
+          } else {
+            if (!walkVideo.paused) {
+              walkVideo.pause();
+              walkVideo.currentTime = 0;
+            }
           }
         }
-      }
 
-      if (pickVideo) {
-        if (isPicking) {
-          if (pickVideo.paused && !pickVideo.ended) {
+        if (pickVideo) {
+          if (isPicking) {
+            if (pickVideo.paused && !pickVideo.ended) {
+              pickVideo.currentTime = 0;
+              pickVideo.play().catch(() => {});
+            }
+          } else {
+            if (!pickVideo.paused) {
+              pickVideo.pause();
+            }
             pickVideo.currentTime = 0;
-            pickVideo.play().catch(() => {});
           }
-        } else {
-          if (!pickVideo.paused) {
-            pickVideo.pause();
-          }
-          pickVideo.currentTime = 0;
         }
-      }
 
-      // Map grid coordinates to canvas pixel coordinates
-      const cx = padX + renderX * cellSizeVal + cellSizeVal / 2;
-      const cy = padY + renderY * cellSizeVal + cellSizeVal / 2;
+        // Map grid coordinates to canvas pixel coordinates
+        const cx = padX + renderX * cellSizeVal + cellSizeVal / 2;
+        const cy = padY + renderY * cellSizeVal + cellSizeVal / 2;
 
-      drawCharacter(ctx, cx, cy, cellSizeVal, c);
-    });
+        drawCharacter(ctx, cx, cy, cellSizeVal, c);
+      });
+    } catch (e) {
+      // Silently catch character rendering errors so grid lines still draw
+    }
+
   }, [width, height, characters, trashItems, trashCans, obstacles, isExecuting, zoom, offset, getCellSize, imagesLoaded, offsets]);
 
   // Draw a single character using WebM video animation with chroma key
