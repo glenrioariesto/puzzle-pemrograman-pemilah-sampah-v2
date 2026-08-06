@@ -787,7 +787,7 @@ export default function GridMap({
       >
         <canvas
           ref={canvasRef}
-          className="block w-full bg-[#7CCD8F] h-full"
+          className="block w-full bg-[#6DCC7E] h-full"
         />
 
         {/* Controls Container (Help + Zoom + Backpack) */}
