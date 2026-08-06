@@ -510,25 +510,25 @@ export function useArenaGame(
         physics.frameTicks++;
 
         if (step.action === 'RIGHT') {
-          physics.vx = 0.035;
+          physics.vx = 0.0351;
           character.facingDir = 'RIGHT';
-          // At 50 FPS, 30 ticks takes 600ms, moving 30 * 0.035 = 1.05 cells.
-          if (physics.frameTicks >= 30) {
+          // At 50 FPS, 28.5 ticks (570ms) at 0.0351 speed moves exactly 1.0 grid cell
+          if (physics.frameTicks >= 28.5) {
             physics.vx = 0;
             physics.frameTicks = 0;
             physics.playbackIndex++;
             newLogs.push(`[Gerakan] ${characterLabel} langkah ${stepNum}: Melangkah ke kanan.`);
           }
         } else if (step.action === 'LEFT') {
-          physics.vx = -0.035;
+          physics.vx = -0.0351;
           character.facingDir = 'LEFT';
-          if (physics.frameTicks >= 30) {
+          if (physics.frameTicks >= 28.5) {
             physics.vx = 0;
             physics.frameTicks = 0;
             physics.playbackIndex++;
             newLogs.push(`[Gerakan] ${characterLabel} langkah ${stepNum}: Melangkah ke kiri.`);
           }
-        } else if (step.action === 'UP') { // Loncat / Jump forward in the facing direction
+        } else if (step.action === 'UP') { // Loncat / Jump forward in facing direction
           // On start of jump, trigger vertical velocity
           if (physics.frameTicks === 1) {
             if (physics.isOnGround) {
@@ -537,8 +537,8 @@ export function useArenaGame(
               physics.isOnGround = false;
             }
           }
-          // Move forward while jumping based on facing direction
-          physics.vx = character.facingDir === 'RIGHT' ? 0.065 : -0.065;
+          // Move forward 2 cells while jumping (2.0 / ~30 ticks = 0.066 speed)
+          physics.vx = character.facingDir === 'RIGHT' ? 0.066 : -0.066;
 
           // Jump finishes only when landing back on ground
           if (physics.frameTicks > 5 && physics.isOnGround) {
@@ -547,7 +547,7 @@ export function useArenaGame(
             physics.playbackIndex++;
             newLogs.push(`[Gerakan] ${characterLabel} langkah ${stepNum}: Melompat dan mendarat.`);
           }
-        } else if (step.action === 'DOWN') { // Down/descend (optional fast drop)
+        } else if (step.action === 'DOWN') { // Down/descend
           physics.vy += 0.02; // fast fall
           if (physics.frameTicks >= 10 || physics.isOnGround) {
             physics.frameTicks = 0;
@@ -556,11 +556,11 @@ export function useArenaGame(
           }
         } else if (step.action === 'PICK') {
           if (physics.frameTicks === 1) {
-            // Immediately check if near any uncollected trash at the start of pick step
+            // Check if near uncollected trash within precise 0.75 cell radius
             const targetX = physics.x;
             const targetY = physics.y;
             const foundIdx = currentTrash.findIndex(
-              t => Math.abs(t.pos.x - targetX) <= 1.2 && Math.abs(t.pos.y - targetY) <= 0.6 && !t.collected
+              t => Math.abs(t.pos.x - targetX) <= 0.75 && Math.abs(t.pos.y - targetY) <= 0.6 && !t.collected
             );
 
             if (foundIdx !== -1) {
@@ -580,12 +580,12 @@ export function useArenaGame(
                 newLogs.push(`[Aksi] ${characterLabel} langkah ${stepNum}: Mengambil "${targetTrash.item.name}" ${targetTrash.item.emoji}.`);
               }
             } else {
-              newLogs.push(`[Perhatian] ${characterLabel} langkah ${stepNum}: Tidak ada sampah di dekat karakter!`);
+              newLogs.push(`[Perhatian] ${characterLabel} langkah ${stepNum}: Tidak ada sampah di posisi ini!`);
             }
           }
 
-          // PICK animation delay (70 ticks @ 20ms = 1.4s)
-          if (physics.frameTicks >= 70 || physics.hasErrored) {
+          // PICK animation delay (50 ticks @ 20ms = 1.0s)
+          if (physics.frameTicks >= 50 || physics.hasErrored) {
             physics.frameTicks = 0;
             physics.playbackIndex++;
           }
@@ -593,21 +593,30 @@ export function useArenaGame(
           if (physics.frameTicks === 1) {
             const targetX = physics.x;
             const targetY = physics.y;
-            // Find if there is a trash can nearby
+            // Find if there is a trash can nearby within 0.75 cell radius
             const foundCan = level.trashCans.find(
-              tc => Math.abs(tc.pos.x - targetX) <= 1.2 && Math.abs(tc.pos.y - targetY) <= 0.8
+              tc => Math.abs(tc.pos.x - targetX) <= 0.75 && Math.abs(tc.pos.y - targetY) <= 0.8
             );
 
             if (foundCan) {
-              const matchingItems = physics.backpack.filter(item => item.type === foundCan.type);
-              if (matchingItems.length > 0) {
-                playSound('dump');
-                physics.backpack = physics.backpack.filter(item => item.type !== foundCan.type);
-                character.backpack = physics.backpack;
-                newLogs.push(`[Pilah Sukses] ${characterLabel} langkah ${stepNum}: ${matchingItems.length} sampah ${foundCan.label} dibuang ke tong ${foundCan.emoji}!`);
+              if (physics.backpack.length > 0) {
+                // FILO (First-In, Last-Out): Ambil item sampah paling atas (terakhir dimasukkan ke tas)
+                const lastPickedItem = physics.backpack[physics.backpack.length - 1];
+
+                if (lastPickedItem.type === foundCan.type) {
+                  playSound('dump');
+                  const updatedBackpack = [...physics.backpack];
+                  const droppedItem = updatedBackpack.pop(); // Hapus item paling atas
+                  physics.backpack = updatedBackpack;
+                  character.backpack = updatedBackpack;
+                  newLogs.push(`[Pilah Sukses] ${characterLabel} langkah ${stepNum}: Membuang "${droppedItem.name}" ${droppedItem.emoji} (Sampah teratas tas / terakhir diambil) ke Tong ${foundCan.label} ${foundCan.emoji}!`);
+                } else {
+                  playSound('fail');
+                  newLogs.push(`[Aksi Gagal] ${characterLabel} langkah ${stepNum}: Sampah teratas di tas ("${lastPickedItem.name}" ${lastPickedItem.emoji}) tidak cocok dengan Tong ${foundCan.label} ${foundCan.emoji}! (Sampah yang terakhir diambil harus dibuang lebih dulu)`);
+                }
               } else {
                 playSound('fail');
-                newLogs.push(`[Aksi] ${characterLabel} langkah ${stepNum}: Di dekat Tong ${foundCan.label} ${foundCan.emoji} tapi tidak membawa sampah jenis ini!`);
+                newLogs.push(`[Aksi Gagal] ${characterLabel} langkah ${stepNum}: Tas kosong, tidak ada sampah untuk dibuang!`);
               }
             } else {
               playSound('click');

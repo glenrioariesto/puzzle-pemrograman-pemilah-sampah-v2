@@ -138,11 +138,33 @@ export default function Arena({
     let actions: CommandAction[] = [];
 
     if (levelId === 1) {
-      actions = ['RIGHT', 'RIGHT', 'RIGHT', 'RIGHT', 'PICK', 'RIGHT', 'RIGHT', 'RIGHT', 'RIGHT', 'PICK', 'RIGHT', 'RIGHT', 'RIGHT', 'RIGHT', 'RIGHT', 'RIGHT', 'DROP', 'LEFT', 'DROP'];
+      // Level 1: Mulai x=0 -> KANAN 3x ke x=3 AMBIL (Apel) -> KANAN 1x ke x=4 LONCAT ke x=6 -> KANAN 1x ke x=7 AMBIL (Kaleng) -> KANAN 7x ke x=14 BUANG (Kaleng) -> KIRI 1x ke x=13 BUANG (Apel)
+      actions = [
+        'RIGHT', 'RIGHT', 'RIGHT', 'PICK',
+        'RIGHT', 'UP', 'RIGHT', 'PICK',
+        'RIGHT', 'RIGHT', 'RIGHT', 'RIGHT', 'RIGHT', 'RIGHT', 'RIGHT', 'DROP',
+        'LEFT', 'DROP'
+      ];
     } else if (levelId === 2) {
-      actions = ['RIGHT', 'RIGHT', 'RIGHT', 'RIGHT', 'PICK', 'RIGHT', 'UP', 'RIGHT', 'PICK', 'RIGHT', 'UP', 'RIGHT', 'RIGHT', 'RIGHT', 'DROP', 'LEFT', 'DROP'];
+      // Level 2: Mulai x=0 -> KANAN 3x ke x=3 AMBIL (Apel) -> KANAN 1x ke x=4 LONCAT ke x=6 -> KANAN 1x ke x=7 AMBIL (Kaleng) -> KANAN 1x ke x=8 LONCAT ke x=10 AMBIL (Baterai) -> KANAN 5x ke x=15 BUANG (Baterai) -> KIRI 1x ke x=14 BUANG (Kaleng) -> KIRI 1x ke x=13 BUANG (Apel)
+      actions = [
+        'RIGHT', 'RIGHT', 'RIGHT', 'PICK',
+        'RIGHT', 'UP', 'RIGHT', 'PICK',
+        'RIGHT', 'UP', 'PICK',
+        'RIGHT', 'RIGHT', 'RIGHT', 'RIGHT', 'RIGHT', 'DROP',
+        'LEFT', 'DROP',
+        'LEFT', 'DROP'
+      ];
     } else if (levelId === 3) {
-      actions = ['RIGHT', 'RIGHT', 'RIGHT', 'PICK', 'RIGHT', 'RIGHT', 'RIGHT', 'RIGHT', 'PICK', 'RIGHT', 'RIGHT', 'RIGHT', 'RIGHT', 'PICK', 'RIGHT', 'RIGHT', 'RIGHT', 'RIGHT', 'DROP', 'LEFT', 'DROP', 'LEFT', 'DROP'];
+      // Level 3: Mulai x=0 -> KANAN 3x ke x=3 AMBIL (Baterai) -> KANAN 1x ke x=4 LONCAT ke x=6 -> KANAN 1x ke x=7 AMBIL (Kaleng) -> KANAN 1x ke x=8 LONCAT ke x=10 -> KANAN 1x ke x=11 AMBIL (Wortel) -> KANAN 2x ke x=13 BUANG (Wortel) -> KANAN 1x ke x=14 BUANG (Kaleng) -> KANAN 1x ke x=15 BUANG (Baterai)
+      actions = [
+        'RIGHT', 'RIGHT', 'RIGHT', 'PICK',
+        'RIGHT', 'UP', 'RIGHT', 'PICK',
+        'RIGHT', 'UP', 'RIGHT', 'PICK',
+        'RIGHT', 'RIGHT', 'DROP',
+        'RIGHT', 'DROP',
+        'RIGHT', 'DROP'
+      ];
     } else if (levelId === 4) {
       actions = ['RIGHT', 'RIGHT', 'RIGHT', 'PICK', 'RIGHT', 'RIGHT', 'PICK', 'RIGHT', 'RIGHT', 'PICK', 'RIGHT', 'RIGHT', 'RIGHT', 'RIGHT', 'RIGHT', 'RIGHT', 'DROP', 'LEFT', 'DROP', 'DROP', 'LEFT', 'LEFT', 'LEFT', 'PICK', 'RIGHT', 'RIGHT', 'RIGHT', 'RIGHT', 'DROP'];
     } else if (levelId === 5) {

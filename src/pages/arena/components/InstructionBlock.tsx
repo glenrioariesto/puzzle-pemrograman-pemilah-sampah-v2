@@ -165,7 +165,7 @@ export default function InstructionBlock({
 
       <div className={`flex items-center gap-1 sm:gap-2 z-10 ${colors.textColor}`}>
         {renderIcon(instruction.type)}
-        <span className="font-extrabold text-[9px] sm:text-xs tracking-tight font-mono">
+        <span className="font-extrabold text-[9px] sm:text-xs tracking-wider font-mono">
           {config.label}
         </span>
       </div>

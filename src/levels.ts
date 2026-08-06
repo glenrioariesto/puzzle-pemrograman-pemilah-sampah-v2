@@ -45,93 +45,100 @@ export const LEVELS: GameLevel[] = [
   // ── Level 1 ──────────────────────────────────────────────────────────────
   {
     id: 1,
-    name: "1. Pengenalan Tukang Sampah",
-    description: "Kendalikan Tukang Sampah di area taman bebas! Ambil sampah yang berserakan di tanah (Apel dan Kaleng) lalu buang ke tong sampah yang sesuai di sisi kanan!",
+    name: "1. Pemilahan Dasar & Tumpukan Tas",
+    description: "Kendalikan Tukang Sampah untuk mengambil Apel dan Kaleng. Ingat aturan tumpukan tas: Sampah yang TERAKHIR diambil berada di posisi paling atas tas dan HARUS dibuang TERLEBIH DAHULU! Hati-hati ada rintangan batu di jalan!",
     gridSize: { width: 16, height: 4 },
     characters: FIXED_CHARACTERS,
     startPos: { x: 0, y: 3 },
     trashItems: [
-      { id: 't1', pos: { x: 4, y: 3 }, item: TRASH_ITEMS.apple },
-      { id: 't2', pos: { x: 8, y: 3 }, item: TRASH_ITEMS.can },
+      { id: 't1', pos: { x: 3, y: 3 }, item: TRASH_ITEMS.apple }, // 1st diambil (Organik - Dasar Tas)
+      { id: 't2', pos: { x: 7, y: 3 }, item: TRASH_ITEMS.can },   // 2nd diambil (Daur Ulang - Teratas Tas)
     ],
     trashCans: FIXED_TRASH_CANS,
-    obstacles: [],
+    obstacles: [
+      { pos: { x: 5, y: 3 }, type: 'rock', emoji: '🪨' },
+    ],
     maxCapacity: 3,
     maxInstructions: 30,
-    starsThreshold: { three: 19, two: 24 },
+    starsThreshold: { three: 19, two: 23 },
     hints: [
-      "Tukang Sampah dapat menampung maksimal 3 sampah sekaligus di dalam tas.",
-      "Gunakan tombol KANAN untuk berjalan, AMBIL untuk memungut, dan BUANG di atas tong yang tepat di ujung kanan.",
-      "Cukup lakukan 1 perjalanan untuk mengumpulkan kedua sampah sebelum membuangnya.",
+      "1. Gunakan perintah LONCAT (tombol ATAS) sebelum posisi x=5 untuk melompati batu 🪨.",
+      "2. Aturan Tumpukan: Karena Kaleng 🥤 diambil TERAKHIR (x=7), Kaleng ada di paling atas tas. Buang Kaleng dulu ke Tong Kuning (x=14)!",
+      "3. Setelah Kaleng terbuang, baru buang Apel 🍎 ke Tong Hijau (x=13).",
     ],
     ctInsights: {
-      decomposition: "Memecah perjalanan menjadi: ambil apel → ambil kaleng → buang kaleng di tong kuning → buang apel di tong hijau.",
-      pattern:       "Mengetahui letak tong sampah: Hijau (x=13) untuk organik, Kuning (x=14) untuk daur ulang.",
-      abstraction:   "Fokus pada rute terpendek yang menghubungkan sampah dan tong.",
-      algorithm:     "Gerak ke (4,3) ambil → gerak ke (8,3) ambil → gerak ke tong kuning (14,3) buang → gerak ke tong hijau (13,3) buang.",
+      decomposition: "Ambil Apel → Loncat Batu → Ambil Kaleng → Jalan ke Tong Kuning (14) buang Kaleng → Mundur ke Tong Hijau (13) buang Apel.",
+      pattern:       "Memahami struktur tumpukan: Item terakhir masuk adalah item pertama yang harus diproses/dibuang.",
+      abstraction:   "Fokus pada urutan tumpukan sampah di dalam tas ransel.",
+      algorithm:     "Kanan 3x → Ambil (Apel) → Kanan 1x → Loncat (Batu) → Kanan 1x → Ambil (Kaleng) → Kanan ke x=14 → Buang (Kaleng) → Kiri ke x=13 → Buang (Apel).",
     },
   },
 
   // ── Level 2 ──────────────────────────────────────────────────────────────
   {
     id: 2,
-    name: "2. Belajar Melompat",
-    description: "Rencanakan rute Tukang Sampah untuk mengumpulkan Apel dan Kaleng sambil melompati rintangan batu dan semak di tanah!",
+    name: "2. Tiga Jenis Sampah & Urutan Tumpukan",
+    description: "Ambil 3 jenis sampah (Apel, Kaleng, dan Baterai) sambil melompati rintangan batu 🪨! Karena urutan ambil adalah Apel -> Kaleng -> Baterai, maka Baterai berada di paling atas tas!",
     gridSize: { width: 16, height: 4 },
     characters: FIXED_CHARACTERS,
     startPos: { x: 0, y: 3 },
     trashItems: [
-      { id: 't1', pos: { x: 4, y: 3 }, item: TRASH_ITEMS.apple },
-      { id: 't2', pos: { x: 8, y: 3 }, item: TRASH_ITEMS.can },
+      { id: 't1', pos: { x: 3, y: 3 }, item: TRASH_ITEMS.apple },   // 1st (Organik - Dasar)
+      { id: 't2', pos: { x: 7, y: 3 }, item: TRASH_ITEMS.can },     // 2nd (Daur Ulang - Tengah)
+      { id: 't3', pos: { x: 10, y: 3 }, item: TRASH_ITEMS.battery }, // 3rd (B3 - Teratas)
     ],
     trashCans: FIXED_TRASH_CANS,
     obstacles: [
-      { pos: { x: 6, y: 3 }, type: 'rock', emoji: '🪨' },
-      { pos: { x: 10, y: 3 }, type: 'bush', emoji: '🌿' },
+      { pos: { x: 5, y: 3 }, type: 'rock', emoji: '🪨' },
+      { pos: { x: 9, y: 3 }, type: 'rock', emoji: '🪨' },
     ],
     maxCapacity: 3,
     maxInstructions: 35,
-    starsThreshold: { three: 25, two: 30 },
+    starsThreshold: { three: 21, two: 25 },
     hints: [
-      "Gunakan perintah JUMP/LONCAT (tombol ATAS) dikombinasikan dengan arah KANAN untuk melompati rintangan.",
-      "Lompati batu (🪨) di x=6 dan semak (🌿) di x=10.",
-      "Pilah sampah di tong daur ulang (kuning) di x=14 dan tong organik (hijau) di x=13.",
+      "1. Lompati batu 🪨 di x=5 dan x=9 menggunakan tombol LONCAT.",
+      "2. Urutan tumpukan di tas: [Bawah: Apel 🍎 | Tengah: Kaleng 🥤 | Atas: Baterai 🔋].",
+      "3. Urutan membuang yang benar: Buang Baterai ke Tong Merah (x=15) → Buang Kaleng ke Tong Kuning (x=14) → Buang Apel ke Tong Hijau (x=13).",
     ],
     ctInsights: {
-      decomposition: "Membagi rute menjadi: jalan kanan, lompat melewati rintangan, ambil sampah, lalu antar ke tong.",
-      pattern:       "Melihat batu dan semak menghalangi jalan mendatar, mengharuskan lompatan udara.",
-      abstraction:   "Mengabaikan sisa area kosong dan fokus pada penempatan perintah loncat sebelum posisi x=6 dan x=10.",
-      algorithm:     "Gerak ke (4,3) ambil → lompat melewati x=6 → gerak ke (8,3) ambil → lompat melewati x=10 → antar ke tong kuning (14,3) & hijau (13,3).",
+      decomposition: "Kumpulkan 3 sampah → Lompati 2 batu → Buang Baterai di Tong Merah (15) → Buang Kaleng di Tong Kuning (14) → Buang Apel di Tong Hijau (13).",
+      pattern:       "Pola urutan pembuangan mundur 15 -> 14 -> 13 sangat pas dengan tumpukan tas.",
+      abstraction:   "Memetakan tumpukan tas dengan letak fisik tong sampah.",
+      algorithm:     "Kanan ke x=3 Ambil → Kanan 1x Loncat x=5 → Ambil x=7 → Kanan 1x Loncat x=9 → Ambil x=10 → Kanan ke x=15 Buang → Kiri ke x=14 Buang → Kiri ke x=13 Buang.",
     },
   },
 
   // ── Level 3 ──────────────────────────────────────────────────────────────
   {
     id: 3,
-    name: "3. Tiga Jenis Sampah",
-    description: "Tantangan meningkat! Kumpulkan tiga jenis sampah (Apel, Kaleng, dan Baterai) sekaligus lalu buang ke masing-masing tong yang sesuai!",
+    name: "3. Rintangan Ganda & Manajemen Tumpukan",
+    description: "Uji keahlian tingkat lanjut! Urutan sampah yang diambil: Baterai B3 (x=3) -> Kaleng (x=7) -> Wortel (x=11). Rencanakan rute pembuangan yang efisien melewati rintangan batu!",
     gridSize: { width: 16, height: 4 },
     characters: FIXED_CHARACTERS,
     startPos: { x: 0, y: 3 },
     trashItems: [
-      { id: 't1', pos: { x: 3, y: 3 }, item: TRASH_ITEMS.apple },
-      { id: 't2', pos: { x: 7, y: 3 }, item: TRASH_ITEMS.can },
-      { id: 't3', pos: { x: 11, y: 3 }, item: TRASH_ITEMS.battery },
+      { id: 't1', pos: { x: 3, y: 3 }, item: TRASH_ITEMS.battery }, // 1st (B3 - Dasar)
+      { id: 't2', pos: { x: 7, y: 3 }, item: TRASH_ITEMS.can },     // 2nd (Daur Ulang - Tengah)
+      { id: 't3', pos: { x: 11, y: 3 }, item: TRASH_ITEMS.carrot },  // 3rd (Organik - Teratas)
     ],
     trashCans: FIXED_TRASH_CANS,
-    obstacles: [],
+    obstacles: [
+      { pos: { x: 5, y: 3 }, type: 'rock', emoji: '🪨' },
+      { pos: { x: 9, y: 3 }, type: 'rock', emoji: '🪨' },
+    ],
     maxCapacity: 3,
-    maxInstructions: 35,
-    starsThreshold: { three: 26, two: 31 },
+    maxInstructions: 40,
+    starsThreshold: { three: 19, two: 23 },
     hints: [
-      "Tas Anda muat pas 3 sampah. Kumpulkan ketiganya sekaligus sebelum menuju area tong.",
-      "Urutan pembuangan: Baterai di tong merah (x=15), Kaleng di kuning (x=14), Apel di hijau (x=13).",
+      "1. Urutan tumpukan di tas: [Bawah: Baterai 🔋 | Tengah: Kaleng 🥤 | Atas: Wortel 🥕].",
+      "2. Karena Wortel 🥕 ada di paling atas, Anda harus membuangnya TERLEBIH DAHULU di Tong Hijau (x=13).",
+      "3. Setelah Wortel terbuang, baru buang Kaleng 🥤 di Tong Kuning (x=14), lalu Baterai 🔋 di Tong Merah (x=15).",
     ],
     ctInsights: {
-      decomposition: "Ambil 3 sampah berurutan, lalu buang ke 3 tong berurutan di sisi kanan.",
-      pattern:       "Mengurutkan aksi pembuangan dari merah (x=15) lalu mundur ke kuning (x=14) dan hijau (x=13) agar langkah efisien.",
-      abstraction:   "Fokus pada koordinat target sampah dan tong untuk menyusun pergerakan linear.",
-      algorithm:     "Ambil di x=3 → ambil di x=7 → ambil di x=11 → buang di x=15 → buang di x=14 → buang di x=13.",
+      decomposition: "Ambil 3 sampah (Baterai, Kaleng, Wortel) → Lompati rintangan batu → Buang Wortel (13) → Buang Kaleng (14) → Buang Baterai (15).",
+      pattern:       "Menyesuaikan alur gerak dengan urutan pembukaan tumpukan tas.",
+      abstraction:   "Evaluasi alur pergerakan maju linear dari kiri ke kanan yang sempurna.",
+      algorithm:     "Ambil di x=3 → Kanan 1x Loncat x=5 → Ambil di x=7 → Kanan 1x Loncat x=9 → Ambil di x=11 → Kanan ke x=13 Buang (Wortel) → Kanan ke x=14 Buang (Kaleng) → Kanan ke x=15 Buang (Baterai).",
     },
   },
 ];
