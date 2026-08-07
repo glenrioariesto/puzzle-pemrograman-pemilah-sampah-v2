@@ -30,6 +30,17 @@ import svgLampu from '../../../../assets/lampu.svg';
 import svgSayur from '../../../../assets/sayur.svg';
 import bgGrid from '../../../../assets/bg-grid.webp';
 
+// Import rock wall grid assets (rock-1.webp to rock-9.webp)
+import rock1 from '../../../../assets/rock-1.webp';
+import rock2 from '../../../../assets/rock-2.webp';
+import rock3 from '../../../../assets/rock-3.webp';
+import rock4 from '../../../../assets/rock-4.webp';
+import rock5 from '../../../../assets/rock-5.webp';
+import rock6 from '../../../../assets/rock-6.webp';
+import rock7 from '../../../../assets/rock-7.webp';
+import rock8 from '../../../../assets/rock-8.webp';
+import rock9 from '../../../../assets/rock-9.webp';
+
 export interface CharacterRenderData {
   id: CharacterId;
   pos: GridPos;
@@ -42,6 +53,7 @@ export interface CharacterRenderData {
 
 export interface ElementSetting {
   yOffset: number;   // Multiplier for vertical positioning relative to cell size
+  xOffset?: number;  // Multiplier for horizontal positioning relative to cell size
   sizeScale: number; // Multiplier for size relative to cell size
   sizeScaleH?: number; // Optional height multiplier (for characters)
   sizeScaleW?: number; // Optional width multiplier (for characters)
@@ -64,12 +76,14 @@ export const DEFAULT_ELEMENT_CONFIGS: {
   trashCans: Record<string, Partial<ElementSetting>>;
   // Per-Obstacle settings (by type: rock, bush, wall, water)
   obstacles: Record<string, Partial<ElementSetting>>;
+  // Per-Rock Tile asset settings (by asset key: rock_1 to rock_9)
+  rockTiles: Record<string, Partial<ElementSetting>>;
 } = {
   defaultCategory: {
     character: { yOffset: 0.25, sizeScale: 1.0, sizeScaleW: 1.15, sizeScaleH: 2.30 },
     trash:     { yOffset: 0.80, sizeScale: 0.45 },
     trashCan:  { yOffset: 0.50, sizeScale: 0.85 },
-    obstacle:  { yOffset: 0.20, sizeScale: 0.60 },
+    obstacle:  { yOffset: 0.50, xOffset: 0, sizeScale: 1.20 },
   },
 
   // Specific settings per character ID
@@ -102,10 +116,23 @@ export const DEFAULT_ELEMENT_CONFIGS: {
 
   // Specific settings per obstacle type
   obstacles: {
-    rock:  { yOffset: 0.20, sizeScale: 0.60 },
-    bush:  { yOffset: 0.20, sizeScale: 0.60 },
-    wall:  { yOffset: 0.20, sizeScale: 0.60 },
-    water: { yOffset: 0.20, sizeScale: 0.60 },
+    rock:  { yOffset: 0.50, xOffset: 0, sizeScale: 1.20 },
+    bush:  { yOffset: 0.50, xOffset: 0, sizeScale: 0.90 },
+    wall:  { yOffset: 0.50, xOffset: 0, sizeScale: 1.25 },
+    water: { yOffset: 0.50, xOffset: 0, sizeScale: 0.90 },
+  },
+
+  // Custom position offsets (yOffset, xOffset) and enlarged sizeScale for rock assets rock-1 to rock-9
+  rockTiles: {
+    rock_1: { yOffset: 0.50, xOffset: 0, sizeScale: 1.20 },
+    rock_2: { yOffset: 0.50, xOffset: 0, sizeScale: 1.20 },
+    rock_3: { yOffset: 0.55, xOffset: 0, sizeScale: 1.20 },
+    rock_4: { yOffset: 0.60 , xOffset: 0, sizeScale: 1.20 },
+    rock_5: { yOffset: 0.50, xOffset: 0, sizeScale: 1.25 },
+    rock_6: { yOffset: 0.50, xOffset: 0, sizeScale: 1.20 },
+    rock_7: { yOffset: 0.50, xOffset: 0, sizeScale: 1.20 },
+    rock_8: { yOffset: 0.50, xOffset: 0, sizeScale: 1.20 },
+    rock_9: { yOffset: 0.50, xOffset: 0, sizeScale: 1.20 },
   },
 };
 
@@ -370,6 +397,17 @@ export default function GridMap({
       battery: svgBaterai,
       paint: svgKalengBesi,
       bgGrid: bgGrid,
+
+      // Rock & Wall grid assets
+      rock_1: rock1,
+      rock_2: rock2,
+      rock_3: rock3,
+      rock_4: rock4,
+      rock_5: rock5,
+      rock_6: rock6,
+      rock_7: rock7,
+      rock_8: rock8,
+      rock_9: rock9,
     };
 
     let loadedCount = 0;
@@ -491,7 +529,39 @@ export default function GridMap({
     }
     ctx.restore();
 
-    // 5. Draw Obstacles (Placed on the floor)
+    // Helper function to resolve autotiled or variant rock asset key
+    const getRockAssetKey = (obs: ObstacleOnGrid, allObs: ObstacleOnGrid[]) => {
+      const isRockOrWall = (gx: number, gy: number) =>
+        allObs.some(o => (o.type === 'rock' || o.type === 'wall') && o.pos.x === gx && o.pos.y === gy);
+
+      const x = obs.pos.x;
+      const y = obs.pos.y;
+      const top = isRockOrWall(x, y - 1);
+      const bottom = isRockOrWall(x, y + 1);
+      const left = isRockOrWall(x - 1, y);
+      const right = isRockOrWall(x + 1, y);
+
+      // Connected rock wall layout (3x3 autotiling grid)
+      if (top || bottom || left || right) {
+        if (!top && !left && (right || bottom)) return 'rock_1';
+        if (!top && left && right) return 'rock_2';
+        if (!top && !right && (left || bottom)) return 'rock_3';
+        if (top && bottom && !left && right) return 'rock_4';
+        if (top && bottom && left && right) return 'rock_5';
+        if (top && bottom && !right && left) return 'rock_6';
+        if (!bottom && !left && (top || right)) return 'rock_7';
+        if (!bottom && left && right) return 'rock_8';
+        if (!bottom && !right && (top || left)) return 'rock_9';
+        if (top && bottom && !left && !right) return 'rock_5';
+        if (left && right && !top && !bottom) return 'rock_2';
+      }
+
+      // Standalone single rock/wall obstacle: pick deterministic variant based on position
+      const variantIndex = ((x * 7 + y * 13) % 9) + 1;
+      return `rock_${variantIndex}`;
+    };
+
+    // 5. Draw Obstacles (Placed on the floor / grid)
     obstacles.forEach(obs => {
       const { x: cx, y: cy } = toScreen(obs.pos.x, obs.pos.y);
       const cx2 = cx + cellSizeVal / 2;
@@ -501,6 +571,45 @@ export default function GridMap({
       const cy2 = cy + cellSizeVal * yOffset;
 
       ctx.save();
+
+      // Render WebP rock/wall grid asset if type is rock or wall
+      if (obs.type === 'rock' || obs.type === 'wall') {
+        const rockKey = getRockAssetKey(obs, obstacles);
+        const tileConfig = DEFAULT_ELEMENT_CONFIGS.rockTiles[rockKey] || {};
+
+        const tileYOffset = tileConfig.yOffset ?? yOffset;
+        const tileXOffset = tileConfig.xOffset ?? obsConfig.xOffset ?? 0;
+        const tileScale   = tileConfig.sizeScale ?? sizeScale;
+
+        const tileCx = cx + cellSizeVal / 2 + cellSizeVal * tileXOffset;
+        const tileCy = cy + cellSizeVal * tileYOffset;
+
+        const rockImg = imagesRef.current[rockKey] || imagesRef.current['rock_5'];
+        if (rockImg) {
+          const obsSize = cellSizeVal * tileScale;
+
+          ctx.save();
+          ctx.translate(tileCx, tileCy);
+
+          // Dynamic visual variation: Flip horizontally on alternating coordinates so adjacent tiles are non-uniform
+          const shouldFlip = (obs.pos.x * 3 + obs.pos.y * 7) % 2 === 1;
+          if (shouldFlip) {
+            ctx.scale(-1, 1);
+          }
+
+          // Subtle organic angle variation (+- 2.5 degrees) based on grid position
+          const angle = (((obs.pos.x * 11 + obs.pos.y * 17) % 5) - 2) * (Math.PI / 180);
+          ctx.rotate(angle);
+
+          drawImageContain(ctx, rockImg, 0, 0, obsSize, obsSize);
+          ctx.restore();
+
+          ctx.restore();
+          return;
+        }
+      }
+
+      // Fallback emoji rendering for bush/water or un-loaded assets
       ctx.font = `${Math.min(cellSizeVal * sizeScale, 30)}px sans-serif`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
