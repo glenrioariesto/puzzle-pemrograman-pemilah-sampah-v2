@@ -555,8 +555,8 @@ export function useArenaGame(
             newLogs.push(`[Gerakan] ${characterLabel} langkah ${stepNum}: Turun.`);
           }
         } else if (step.action === 'PICK') {
+          // Frame 1: Start WebM pick animation & check capacity error
           if (physics.frameTicks === 1) {
-            // Check if near uncollected trash within precise 0.75 cell radius
             const targetX = physics.x;
             const targetY = physics.y;
             const foundIdx = currentTrash.findIndex(
@@ -572,45 +572,48 @@ export function useArenaGame(
                 hasError = true;
                 newLogs.push(`[Aksi] ${characterLabel} langkah ${stepNum}: Ingin mengambil ${targetTrash.item.name}.`);
                 newLogs.push(`[Kesalahan] ${characterLabel} gagal! Tas penuh! Kapasitas maksimal ${level.maxCapacity}.`);
-              } else {
-                playSound('collect');
-                currentTrash[foundIdx] = { ...targetTrash, collected: true };
-                physics.backpack = [...physics.backpack, targetTrash.item];
-                character.backpack = [...character.backpack, targetTrash.item];
-                newLogs.push(`[Aksi] ${characterLabel} langkah ${stepNum}: Mengambil "${targetTrash.item.name}" ${targetTrash.item.emoji}.`);
               }
             } else {
               newLogs.push(`[Perhatian] ${characterLabel} langkah ${stepNum}: Tidak ada sampah di posisi ini!`);
             }
           }
 
-          // PICK animation delay (50 ticks @ 20ms = 1.0s)
-          if (physics.frameTicks >= 50 || physics.hasErrored) {
+          // Frame 35 (~0.7s): Mid-animation when character bends down & reaches trash
+          if (physics.frameTicks === 35 && !physics.hasErrored) {
+            const targetX = physics.x;
+            const targetY = physics.y;
+            const foundIdx = currentTrash.findIndex(
+              t => Math.abs(t.pos.x - targetX) <= 0.75 && Math.abs(t.pos.y - targetY) <= 0.6 && !t.collected
+            );
+
+            if (foundIdx !== -1) {
+              const targetTrash = currentTrash[foundIdx];
+              playSound('collect');
+              currentTrash[foundIdx] = { ...targetTrash, collected: true };
+              physics.backpack = [...physics.backpack, targetTrash.item];
+              character.backpack = [...character.backpack, targetTrash.item];
+              newLogs.push(`[Aksi] ${characterLabel} langkah ${stepNum}: Mengambil "${targetTrash.item.name}" ${targetTrash.item.emoji}.`);
+            }
+          }
+
+          // PICK WebM animation delay (100 ticks @ 20ms = 2.0s) to allow complete 2-second animation visibility
+          if (physics.frameTicks >= 100 || physics.hasErrored) {
             physics.frameTicks = 0;
             physics.playbackIndex++;
           }
         } else if (step.action === 'DROP') {
+          // Frame 1: Start WebM drop animation & check container alignment
           if (physics.frameTicks === 1) {
             const targetX = physics.x;
             const targetY = physics.y;
-            // Find if there is a trash can nearby within 0.75 cell radius
             const foundCan = level.trashCans.find(
               tc => Math.abs(tc.pos.x - targetX) <= 0.75 && Math.abs(tc.pos.y - targetY) <= 0.8
             );
 
             if (foundCan) {
               if (physics.backpack.length > 0) {
-                // FILO (First-In, Last-Out): Ambil item sampah paling atas (terakhir dimasukkan ke tas)
                 const lastPickedItem = physics.backpack[physics.backpack.length - 1];
-
-                if (lastPickedItem.type === foundCan.type) {
-                  playSound('dump');
-                  const updatedBackpack = [...physics.backpack];
-                  const droppedItem = updatedBackpack.pop(); // Hapus item paling atas
-                  physics.backpack = updatedBackpack;
-                  character.backpack = updatedBackpack;
-                  newLogs.push(`[Pilah Sukses] ${characterLabel} langkah ${stepNum}: Membuang "${droppedItem.name}" ${droppedItem.emoji} (Sampah teratas tas / terakhir diambil) ke Tong ${foundCan.label} ${foundCan.emoji}!`);
-                } else {
+                if (lastPickedItem.type !== foundCan.type) {
                   playSound('fail');
                   newLogs.push(`[Aksi Gagal] ${characterLabel} langkah ${stepNum}: Sampah teratas di tas ("${lastPickedItem.name}" ${lastPickedItem.emoji}) tidak cocok dengan Tong ${foundCan.label} ${foundCan.emoji}! (Sampah yang terakhir diambil harus dibuang lebih dulu)`);
                 }
@@ -624,8 +627,29 @@ export function useArenaGame(
             }
           }
 
-          // DROP animation delay (50 ticks @ 20ms = 1.0s)
-          if (physics.frameTicks >= 50) {
+          // Frame 35 (~0.7s): Mid-animation when character drops item into container
+          if (physics.frameTicks === 35 && !physics.hasErrored) {
+            const targetX = physics.x;
+            const targetY = physics.y;
+            const foundCan = level.trashCans.find(
+              tc => Math.abs(tc.pos.x - targetX) <= 0.75 && Math.abs(tc.pos.y - targetY) <= 0.8
+            );
+
+            if (foundCan && physics.backpack.length > 0) {
+              const lastPickedItem = physics.backpack[physics.backpack.length - 1];
+              if (lastPickedItem.type === foundCan.type) {
+                playSound('dump');
+                const updatedBackpack = [...physics.backpack];
+                const droppedItem = updatedBackpack.pop();
+                physics.backpack = updatedBackpack;
+                character.backpack = updatedBackpack;
+                newLogs.push(`[Pilah Sukses] ${characterLabel} langkah ${stepNum}: Membuang "${droppedItem.name}" ${droppedItem.emoji} (Sampah teratas tas / terakhir diambil) ke Tong ${foundCan.label} ${foundCan.emoji}!`);
+              }
+            }
+          }
+
+          // DROP WebM animation delay (100 ticks @ 20ms = 2.0s) to allow complete 2-second animation visibility
+          if (physics.frameTicks >= 100 || physics.hasErrored) {
             physics.frameTicks = 0;
             physics.playbackIndex++;
           }

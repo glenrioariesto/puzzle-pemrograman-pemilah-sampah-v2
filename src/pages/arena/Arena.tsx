@@ -125,7 +125,7 @@ export default function Arena({
     };
   });
 
-  // Dev Auto-Solve Helper function for testing all 6 levels
+  // Dev Auto-Solve Helper function for testing all levels
   const handleDevAutoSolve = () => {
     playSound('click');
     const levelId = level.id;
@@ -138,7 +138,7 @@ export default function Arena({
     let actions: CommandAction[] = [];
 
     if (levelId === 1) {
-      // Level 1: Mulai x=0 -> KANAN 3x ke x=3 AMBIL (Apel) -> KANAN 1x ke x=4 LONCAT ke x=6 -> KANAN 1x ke x=7 AMBIL (Kaleng) -> KANAN 7x ke x=14 BUANG (Kaleng) -> KIRI 1x ke x=13 BUANG (Apel)
+      // Level 1: Mulai x=0 -> KANAN 3x ke x=3 AMBIL (Apel) -> KANAN 1x ke x=4 LONCAT batu x=5 ke x=6 -> KANAN 1x ke x=7 AMBIL (Kaleng Minuman) -> KANAN 7x ke x=14 BUANG (Kaleng Minuman) -> KIRI 1x ke x=13 BUANG (Apel)
       actions = [
         'RIGHT', 'RIGHT', 'RIGHT', 'PICK',
         'RIGHT', 'UP', 'RIGHT', 'PICK',
@@ -146,7 +146,7 @@ export default function Arena({
         'LEFT', 'DROP'
       ];
     } else if (levelId === 2) {
-      // Level 2: Mulai x=0 -> KANAN 3x ke x=3 AMBIL (Apel) -> KANAN 1x ke x=4 LONCAT ke x=6 -> KANAN 1x ke x=7 AMBIL (Kaleng) -> KANAN 1x ke x=8 LONCAT ke x=10 AMBIL (Baterai) -> KANAN 5x ke x=15 BUANG (Baterai) -> KIRI 1x ke x=14 BUANG (Kaleng) -> KIRI 1x ke x=13 BUANG (Apel)
+      // Level 2: Mulai x=0 -> KANAN 3x ke x=3 AMBIL (Apel) -> KANAN 1x ke x=4 LONCAT batu x=5 ke x=6 -> KANAN 1x ke x=7 AMBIL (Kaleng Minuman) -> KANAN 1x ke x=8 LONCAT batu x=9 ke x=10 AMBIL (Baterai Bekas) -> KANAN 5x ke x=15 BUANG (Baterai Bekas) -> KIRI 1x ke x=14 BUANG (Kaleng Minuman) -> KIRI 1x ke x=13 BUANG (Apel)
       actions = [
         'RIGHT', 'RIGHT', 'RIGHT', 'PICK',
         'RIGHT', 'UP', 'RIGHT', 'PICK',
@@ -156,21 +156,15 @@ export default function Arena({
         'LEFT', 'DROP'
       ];
     } else if (levelId === 3) {
-      // Level 3: Mulai x=0 -> KANAN 3x ke x=3 AMBIL (Baterai) -> KANAN 1x ke x=4 LONCAT ke x=6 -> KANAN 1x ke x=7 AMBIL (Kaleng) -> KANAN 1x ke x=8 LONCAT ke x=10 -> KANAN 1x ke x=11 AMBIL (Wortel) -> KANAN 2x ke x=13 BUANG (Wortel) -> KANAN 1x ke x=14 BUANG (Kaleng) -> KANAN 1x ke x=15 BUANG (Baterai)
+      // Level 3: Mulai x=0 -> KANAN 1x ke x=1 LONCAT batu x=2 ke x=3 AMBIL (Baterai Bekas) -> KANAN 1x ke x=4 LONCAT batu x=5 ke x=6 -> KANAN 1x ke x=7 AMBIL (Kaleng Minuman) -> KANAN 1x ke x=8 LONCAT batu x=9 ke x=10 -> KANAN 1x ke x=11 AMBIL (Sayur) -> KANAN 2x ke x=13 BUANG (Sayur) -> KANAN 1x ke x=14 BUANG (Kaleng Minuman) -> KANAN 1x ke x=15 BUANG (Baterai Bekas)
       actions = [
-        'RIGHT', 'RIGHT', 'RIGHT', 'PICK',
+        'RIGHT', 'UP', 'PICK',
         'RIGHT', 'UP', 'RIGHT', 'PICK',
         'RIGHT', 'UP', 'RIGHT', 'PICK',
         'RIGHT', 'RIGHT', 'DROP',
         'RIGHT', 'DROP',
         'RIGHT', 'DROP'
       ];
-    } else if (levelId === 4) {
-      actions = ['RIGHT', 'RIGHT', 'RIGHT', 'PICK', 'RIGHT', 'RIGHT', 'PICK', 'RIGHT', 'RIGHT', 'PICK', 'RIGHT', 'RIGHT', 'RIGHT', 'RIGHT', 'RIGHT', 'RIGHT', 'DROP', 'LEFT', 'DROP', 'DROP', 'LEFT', 'LEFT', 'LEFT', 'PICK', 'RIGHT', 'RIGHT', 'RIGHT', 'RIGHT', 'DROP'];
-    } else if (levelId === 5) {
-      actions = ['RIGHT', 'RIGHT', 'RIGHT', 'PICK', 'RIGHT', 'UP', 'RIGHT', 'PICK', 'RIGHT', 'UP', 'RIGHT', 'PICK', 'RIGHT', 'RIGHT', 'RIGHT', 'RIGHT', 'DROP', 'LEFT', 'DROP', 'LEFT', 'DROP'];
-    } else if (levelId === 6) {
-      actions = ['RIGHT', 'RIGHT', 'PICK', 'RIGHT', 'PICK', 'RIGHT', 'PICK', 'RIGHT', 'UP', 'RIGHT', 'RIGHT', 'RIGHT', 'RIGHT', 'RIGHT', 'RIGHT', 'RIGHT', 'DROP', 'LEFT', 'DROP', 'DROP', 'LEFT', 'UP', 'LEFT', 'PICK', 'LEFT', 'PICK', 'LEFT', 'LEFT', 'LEFT', 'PICK', 'RIGHT', 'UP', 'RIGHT', 'RIGHT', 'RIGHT', 'RIGHT', 'RIGHT', 'RIGHT', 'RIGHT', 'DROP', 'DROP', 'LEFT', 'DROP'];
     }
 
     handleUpdateInstructions('ORGANIC', createInstructions(actions));
