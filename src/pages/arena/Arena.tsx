@@ -122,6 +122,7 @@ export default function Arena({
       backpack: state?.backpack || [],
       backpackCapacity: level.maxCapacity,
       activeAction: activeStep?.action || null,
+      activeInstructionId: state?.activeInstructionId || null,
     };
   });
 
