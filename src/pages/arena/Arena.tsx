@@ -157,14 +157,20 @@ export default function Arena({
         'LEFT', 'DROP'
       ];
     } else if (levelId === 3) {
-      // Level 3: Mulai x=0 -> KANAN 1x ke x=1 LONCAT batu x=2 ke x=3 AMBIL (Baterai Bekas) -> KANAN 1x ke x=4 LONCAT batu x=5 ke x=6 -> KANAN 1x ke x=7 AMBIL (Kaleng Minuman) -> KANAN 1x ke x=8 LONCAT batu x=9 ke x=10 -> KANAN 1x ke x=11 AMBIL (Sayur) -> KANAN 2x ke x=13 BUANG (Sayur) -> KANAN 1x ke x=14 BUANG (Kaleng Minuman) -> KANAN 1x ke x=15 BUANG (Baterai Bekas)
+      // Level 3 (Kapasitas 3, Strategi Dua Trip):
+      // Trip 1: x=0 -> KANAN ke x=1 AMBIL (Apel) -> LONCAT batu x=2 ke x=3 AMBIL (Kaleng) -> KANAN ke x=4 LONCAT batu x=5 ke x=6 -> KANAN ke x=7 AMBIL (Sayur) [Tas Penuh 3/3] -> KANAN ke x=8 LONCAT batu x=9 ke x=10 -> KANAN 3x ke x=13 BUANG (Sayur) -> KANAN ke x=14 BUANG (Kaleng) -> KIRI ke x=13 BUANG (Apel) [Tas Kosong]
+      // Trip 2: KIRI 2x ke x=11 AMBIL (Baterai) -> KANAN 4x ke x=15 BUANG (Baterai) (Total 26 Langkah)
       actions = [
-        'RIGHT', 'UP', 'PICK',
+        'RIGHT', 'PICK',
+        'UP', 'PICK',
         'RIGHT', 'UP', 'RIGHT', 'PICK',
-        'RIGHT', 'UP', 'RIGHT', 'PICK',
-        'RIGHT', 'RIGHT', 'DROP',
+        'RIGHT', 'UP',
+        'RIGHT', 'RIGHT', 'RIGHT',
+        'DROP',
         'RIGHT', 'DROP',
-        'RIGHT', 'DROP'
+        'LEFT', 'DROP',
+        'LEFT', 'LEFT', 'PICK',
+        'RIGHT', 'RIGHT', 'RIGHT', 'RIGHT', 'DROP'
       ];
     }
 

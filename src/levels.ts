@@ -60,7 +60,7 @@ export const LEVELS: GameLevel[] = [
     ],
     maxCapacity: 3,
     maxInstructions: 30,
-    starsThreshold: { three: 19, two: 23 },
+    starsThreshold: { three: 18, two: 22 },
     hints: [
       "1. Gunakan perintah LONCAT (tombol ATAS) saat di x=4 untuk melompati batu 🪨 di x=5.",
       "2. Aturan Tumpukan: Karena Kaleng Minuman 🥤 diambil TERAKHIR (x=7), Kaleng Minuman ada di paling atas tas. Buang Kaleng Minuman dulu ke Tong Kuning (x=14)!",
@@ -112,14 +112,15 @@ export const LEVELS: GameLevel[] = [
   {
     id: 3,
     name: "3. Rintangan Tiga Batu & Manajemen Tumpukan",
-    description: "Uji keahlian tingkat lanjut! Lompati 3 rintangan batu 🪨 di posisi x=2, x=5, dan x=9! Urutan sampah yang diambil: Baterai Bekas (x=3) -> Kaleng Minuman (x=7) -> Sayur (x=11). Rencanakan rute pembuangan yang efisien melewati ketiga batu!",
+    description: "Tantangan Puncak Grand Master! Pilah 4 jenis sampah dengan kapasitas tas 4 sambil melompati 3 rintangan batu (x=2, x=5, x=9)! Urutan sampah yang diambil: Apel (x=1) -> Kaleng Minuman (x=3) -> Sayur (x=7) -> Baterai Bekas (x=11). Susun strategi tumpukan FILO dengan rute navigasi paling efisien!",
     gridSize: { width: 16, height: 4 },
     characters: FIXED_CHARACTERS,
     startPos: { x: 0, y: 3 },
     trashItems: [
-      { id: 't1', pos: { x: 3, y: 3 }, item: TRASH_ITEMS.battery }, // 1st (B3 - Dasar)
-      { id: 't2', pos: { x: 7, y: 3 }, item: TRASH_ITEMS.can },     // 2nd (Daur Ulang - Tengah)
-      { id: 't3', pos: { x: 11, y: 3 }, item: TRASH_ITEMS.sayur },  // 3rd (Organik - Teratas)
+      { id: 't1', pos: { x: 1, y: 3 }, item: TRASH_ITEMS.apple },   // 1st (Organik - Dasar)
+      { id: 't2', pos: { x: 3, y: 3 }, item: TRASH_ITEMS.can },     // 2nd (Daur Ulang)
+      { id: 't3', pos: { x: 7, y: 3 }, item: TRASH_ITEMS.sayur },   // 3rd (Organik)
+      { id: 't4', pos: { x: 11, y: 3 }, item: TRASH_ITEMS.battery },// 4th (B3 - Teratas)
     ],
     trashCans: FIXED_TRASH_CANS,
     obstacles: [
@@ -128,18 +129,18 @@ export const LEVELS: GameLevel[] = [
       { pos: { x: 9, y: 3 }, type: 'rock', emoji: '🪨' },
     ],
     maxCapacity: 3,
-    maxInstructions: 40,
-    starsThreshold: { three: 19, two: 23 },
+    maxInstructions: 45,
+    starsThreshold: { three: 26, two: 30 },
     hints: [
-      "1. Lompati 3 rintangan batu 🪨 (di x=2, x=5, dan x=9) menggunakan tombol LONCAT.",
-      "2. Urutan tumpukan di tas: [Bawah: Baterai Bekas 🔋 | Tengah: Kaleng Minuman 🥤 | Atas: Sayur 🥬].",
-      "3. Karena Sayur 🥬 ada di paling atas, Anda harus membuangnya TERLEBIH DAHULU di Tong Hijau (x=13).",
+      "1. Kapasitas tas TETAP 3! Karena ada 4 sampah di arena, Anda HARUS buang dulu sebagian sampah ke tong, baru kembali mengambil sisanya!",
+      "2. Trip 1: Ambil Apel (x=1), Kaleng (x=3), dan Sayur (x=7). Tas penuh (3/3)! Lewati Baterai di x=11, lalu buang ketiga sampah di tong sesuai aturan FILO.",
+      "3. Trip 2: Setelah tas kosong, melangkah mundur ke x=11 untuk mengambil Baterai Bekas, lalu buang ke Tong Merah (x=15).",
     ],
     ctInsights: {
-      decomposition: "Lompati 3 batu (x=2, 5, 9) & ambil 3 sampah (Baterai Bekas, Kaleng Minuman, Sayur) → Buang Sayur (13) → Buang Kaleng Minuman (14) → Buang Baterai Bekas (15).",
-      pattern:       "Menyesuaikan alur gerak dengan 3 rintangan batu dan urutan pembukaan tumpukan tas.",
-      abstraction:   "Evaluasi alur pergerakan maju linear dari kiri ke kanan yang melewati 3 rintangan batu.",
-      algorithm:     "Kanan 1x → Loncat x=2 → Ambil di x=3 → Kanan 1x → Loncat x=5 → Kanan 1x → Ambil di x=7 → Kanan 1x → Loncat x=9 → Kanan 1x → Ambil di x=11 → Kanan ke x=13 Buang (Sayur) → Kanan ke x=14 Buang (Kaleng Minuman) → Kanan ke x=15 Buang (Baterai Bekas).",
+      decomposition: "Fase 1 (Trip 1): Ambil 3 sampah pertama (Apel, Kaleng, Sayur) -> Buang di Tong x=13, 14, 13 (Tas Kosong). Fase 2 (Trip 2): Mundur ke x=11 ambil Baterai -> Maju ke Tong Merah x=15 buang Baterai.",
+      pattern:       "Pola Pemrosesan Dua Fase (Batching / Two-Trip): Mengatasi keterbatasan memori buffer tas (kapasitas 3) untuk memproses 4 elemen data.",
+      abstraction:   "Fokus pada pembagian kelompok sampah dan rute bolak-balik pembuangan paling efisien.",
+      algorithm:     "Trip 1: Kanan 1x -> Ambil -> Loncat -> Ambil -> Kanan 1x -> Loncat -> Kanan 1x -> Ambil -> Kanan 1x -> Loncat -> Kanan 3x -> Buang (13) -> Kanan 1x -> Buang (14) -> Kiri 1x -> Buang (13). Trip 2: Kiri 2x -> Ambil (11) -> Kanan 4x -> Buang (15) (Total 26 Langkah).",
     },
   },
 ];
