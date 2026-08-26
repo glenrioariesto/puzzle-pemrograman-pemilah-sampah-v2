@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { LevelHighScore } from './types';
 import { LEVELS } from './levels';
 
@@ -12,7 +12,7 @@ import Splash from './pages/splash/Splash';
 import Dashboard from './pages/dashboard/Dashboard';
 import Arena from './pages/arena/Arena';
 
-import clickSfx from '../assets/click.mp3';
+import { playSfx, syncBgmState, initUserInteractionListener } from './utils/audio';
 
 export default function App() {
   // Global screen state: 'splash' | 'dashboard' | 'arena'
@@ -42,7 +42,18 @@ export default function App() {
   // Global showHowToPlay trigger state that can be activated from splash or arena
   const [showHowToPlayOnArena, setShowHowToPlayOnArena] = useState(false);
 
+  // Initialize audio listener & preload on mount
+  useEffect(() => {
+    initUserInteractionListener();
+  }, []);
+
+  // Sync mute state with background music
+  useEffect(() => {
+    syncBgmState(isMuted);
+  }, [isMuted]);
+
   const handleSelectLevel = (levelId: number) => {
+    playClickSound();
     setActiveLevelId(levelId);
     setPage('arena');
   };
@@ -81,14 +92,7 @@ export default function App() {
 
   // Sound click helper for routing
   const playClickSound = () => {
-    if (isMuted) return;
-    try {
-      const audio = new Audio(clickSfx);
-      audio.currentTime = 0;
-      audio.play().catch(() => {});
-    } catch (e) {
-      // ignore
-    }
+    playSfx('click', isMuted);
   };
 
   const handleStartFromSplash = () => {

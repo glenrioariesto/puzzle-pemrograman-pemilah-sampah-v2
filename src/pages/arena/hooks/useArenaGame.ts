@@ -14,7 +14,7 @@ import {
   Character
 } from '../../../types';
 
-import clickSfx from '../../../../assets/click.mp3';
+import { playSfx, SoundType } from '../../../utils/audio';
 
 // Per-character execution state
 interface CharacterState {
@@ -211,65 +211,8 @@ export function useArenaGame(
   };
 
   // --- Audio ---
-  const playSound = (type: 'click' | 'jump' | 'collect' | 'success' | 'fail' | 'dump' | 'crash') => {
-    if (isMuted) return;
-    try {
-      if (type === 'click') {
-        const audio = new Audio(clickSfx);
-        audio.currentTime = 0;
-        audio.play().catch(() => {});
-        return;
-      }
-
-      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
-      if (!AudioCtx) return;
-      const ctx = new AudioCtx();
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      const now = ctx.currentTime;
-
-      if (type === 'jump') {
-        osc.type = 'triangle';
-        osc.frequency.setValueAtTime(300, now);
-        osc.frequency.exponentialRampToValueAtTime(600, now + 0.15);
-        gain.gain.setValueAtTime(0.1, now);
-        gain.gain.linearRampToValueAtTime(0.01, now + 0.15);
-        osc.start(now); osc.stop(now + 0.15);
-      } else if (type === 'collect') {
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(523.25, now);
-        osc.frequency.setValueAtTime(659.25, now + 0.08);
-        osc.frequency.setValueAtTime(783.99, now + 0.16);
-        gain.gain.setValueAtTime(0.15, now);
-        gain.gain.linearRampToValueAtTime(0.01, now + 0.3);
-        osc.start(now); osc.stop(now + 0.3);
-      } else if (type === 'dump') {
-        osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(600, now);
-        osc.frequency.exponentialRampToValueAtTime(300, now + 0.2);
-        gain.gain.setValueAtTime(0.1, now);
-        gain.gain.linearRampToValueAtTime(0.01, now + 0.25);
-        osc.start(now); osc.stop(now + 0.25);
-      } else if (type === 'success') {
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(523.25, now);
-        osc.frequency.setValueAtTime(659.25, now + 0.1);
-        osc.frequency.setValueAtTime(783.99, now + 0.2);
-        osc.frequency.setValueAtTime(1046.50, now + 0.3);
-        gain.gain.setValueAtTime(0.2, now);
-        gain.gain.linearRampToValueAtTime(0.01, now + 0.55);
-        osc.start(now); osc.stop(now + 0.55);
-      } else if (type === 'fail' || type === 'crash') {
-        osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(220, now);
-        osc.frequency.linearRampToValueAtTime(80, now + 0.4);
-        gain.gain.setValueAtTime(0.2, now);
-        gain.gain.linearRampToValueAtTime(0.01, now + 0.4);
-        osc.start(now); osc.stop(now + 0.4);
-      }
-    } catch (e) { /* audio not available */ }
+  const playSound = (type: SoundType) => {
+    playSfx(type, isMuted);
   };
 
   // --- Compilation ---
