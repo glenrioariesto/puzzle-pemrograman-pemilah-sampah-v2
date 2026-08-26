@@ -187,7 +187,7 @@ export default function Arena({
       {/* Floating Developer Auto-Solve Button */}
       <button
         onClick={handleDevAutoSolve}
-        className="fixed top-3 left-3 z-50 px-3 py-2 bg-indigo-650 hover:bg-indigo-600 border border-indigo-700 text-white text-[11px] font-bold rounded-xl shadow-md cursor-pointer transition-all flex items-center gap-1.5 active:scale-95 hover:scale-[1.02]"
+        className="fixed bottom-3 left-3 z-50 px-3 py-2 bg-indigo-650 hover:bg-indigo-600 border border-indigo-700 text-white text-[11px] font-bold rounded-xl shadow-md cursor-pointer transition-all flex items-center gap-1.5 active:scale-95 hover:scale-[1.02] opacity-40 hover:opacity-100"
         title="Auto-fill correct steps for this level"
       >
         🛠️ Dev Auto-Solve
@@ -198,6 +198,7 @@ export default function Arena({
         {/* Top workspace: Canvas map */}
         <div className="h-[46%] flex flex-col min-h-0" id="top-workspace">
           <GridMap
+            levelId={level.id}
             width={level.gridSize.width}
             height={level.gridSize.height}
             characters={characterRenderData}

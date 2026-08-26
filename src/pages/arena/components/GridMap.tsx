@@ -171,6 +171,7 @@ interface GridMapProps {
   isExecuting: boolean;
   onShowHints?: () => void;
   customOffsets?: Partial<typeof DEFAULT_ELEMENT_OFFSETS>;
+  levelId?: number;
 }
 
 const CHARACTER_COLORS: Record<CharacterId, { bg: string; border: string; eye: string; label: string }> = {
@@ -319,6 +320,7 @@ export default function GridMap({
   isExecuting,
   onShowHints,
   customOffsets,
+  levelId = 1,
 }: GridMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -1080,14 +1082,72 @@ export default function GridMap({
           className="block w-full bg-[#6DCC7E] h-full"
         />
 
-        {/* Controls Container (Help + Zoom + Backpack) */}
+        {/* Level Badge — Pojok Kiri (ukuran h-8 seperti tombol kontrol, bg #0192D5, teks putih) */}
+        <div
+          id="level-badge"
+          className="absolute top-3 left-3 z-10 h-8 flex items-center justify-center bg-[#0192D5] border border-[#017bb3] rounded-lg px-3 text-white font-extrabold text-xs sm:text-sm font-sans tracking-wide shadow-sm select-none"
+        >
+          Level {levelId}
+        </div>
+
+        {/* Controls Container (Backpack Overlay + Help + Zoom) */}
         <div className="absolute top-3 right-3 z-10 flex flex-row gap-1.5 items-start">
+          {/* Multi-character Backpack overlay — Disamping kiri tombol Tampilkan Detail Misi & Petunjuk, ukuran h-8 */}
+          {showBackpack && (
+            <div
+              id="backpack-overlay"
+              className="h-8 flex items-center gap-1.5 sm:gap-2 bg-white/95 backdrop-blur-md border border-[#EED4B7] rounded-lg px-2 sm:px-2.5 shadow-sm select-none flex-shrink-0"
+            >
+              {characters.map(c => {
+                const colors = CHARACTER_COLORS[c.id];
+                return (
+                  <div key={c.id} className="flex items-center gap-1 sm:gap-1.5">
+                    <span className="text-xs sm:text-sm">{CHARACTER_EMOJIS[c.id]}</span>
+                    <div className="flex items-center gap-0.5 sm:gap-1">
+                      {Array.from({ length: c.backpackCapacity }, (_, i) => {
+                        const item = c.backpack[i];
+                        return item ? (
+                          item.image ? (
+                            <img
+                              key={item.id}
+                              src={item.image}
+                              alt={item.name}
+                              className="w-4 h-4 sm:w-4.5 sm:h-4.5 object-contain drop-shadow-xs"
+                            />
+                          ) : (
+                            <span key={item.id} className="text-xs leading-none">{item.emoji}</span>
+                          )
+                        ) : (
+                          <span
+                            key={`empty-${c.id}-${i}`}
+                            className="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-xs border border-dashed border-[#EED4B7] bg-[#FEF8F0]"
+                          />
+                        );
+                      })}
+                    </div>
+                    <span
+                      className={`text-[10px] font-mono font-black ${c.backpack.length === 0 ? 'text-stone-400' : ''}`}
+                      style={{ color: c.backpack.length > 0 ? colors.border : undefined }}
+                    >
+                      {c.backpack.length}/{c.backpackCapacity}
+                    </span>
+                  </div>
+                );
+              })}
+              {characters.length > 1 && totalBackpack > 0 && (
+                <div className="text-[10px] text-stone-600 font-mono font-black border-l border-[#EED4B7] pl-1.5">
+                  {totalBackpack}/{totalCapacity}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Guide / Hints Button (Only visible if callback exists) */}
           {onShowHints && (
             <button
               type="button"
               onClick={onShowHints}
-              className="w-8 h-8 flex items-center justify-center bg-white/90 hover:bg-white border border-[#EED4B7] rounded-lg text-amber-955 hover:text-indigo-600 shadow-sm cursor-pointer transition-colors active:scale-95"
+              className="w-8 h-8 flex items-center justify-center bg-white/90 hover:bg-white border border-[#EED4B7] rounded-lg text-amber-955 hover:text-indigo-600 shadow-sm cursor-pointer transition-colors active:scale-95 flex-shrink-0"
               title="Tampilkan Detail Misi & Petunjuk"
             >
               <HelpCircle className="w-4.5 h-4.5" />
@@ -1128,44 +1188,6 @@ export default function GridMap({
             </button>
           </div>
         </div>
-
-
-
-        {/* Multi-character Backpack overlay — Centered Top & Responsive Large UI */}
-        {showBackpack && (
-          <div className="absolute top-2.5 sm:top-3 left-1/2 -translate-x-1/2 z-20 flex flex-wrap sm:flex-nowrap items-center justify-center gap-2 sm:gap-4 bg-white/95 backdrop-blur-md border-2 border-[#EED4B7] rounded-xl sm:rounded-2xl px-2.5 sm:px-4 py-1.5 sm:py-2.5 shadow-xl max-w-[90%] sm:max-w-none" id="backpack-overlay">
-            {characters.map(c => {
-              const colors = CHARACTER_COLORS[c.id];
-              return (
-                <div key={c.id} className="flex items-center gap-1.5 sm:gap-2">
-                  <span className="text-sm sm:text-lg">{CHARACTER_EMOJIS[c.id]}</span>
-                  <div className="flex items-center gap-1">
-                    {Array.from({ length: c.backpackCapacity }, (_, i) => {
-                      const item = c.backpack[i];
-                      return item ? (
-                        item.image ? (
-                          <img key={item.id} src={item.image} alt={item.name} className="w-5 h-5 sm:w-7 sm:h-7 object-contain drop-shadow-sm" />
-                        ) : (
-                          <span key={item.id} className="text-sm sm:text-base">{item.emoji}</span>
-                        )
-                      ) : (
-                        <span key={`empty-${c.id}-${i}`} className="w-4 h-4 sm:w-6 sm:h-6 rounded-md border-2 border-dashed border-[#EED4B7] bg-[#FEF8F0]"></span>
-                      );
-                    })}
-                  </div>
-                  <span className={`text-[10px] sm:text-xs font-mono font-extrabold ${c.backpack.length === 0 ? 'text-stone-400' : ''}`} style={{ color: c.backpack.length > 0 ? colors.border : undefined }}>
-                    {c.backpack.length}/{c.backpackCapacity}
-                  </span>
-                </div>
-              );
-            })}
-            {characters.length > 1 && totalBackpack > 0 && (
-              <div className="text-[9px] sm:text-xs text-stone-600 font-mono font-bold border-l-0 sm:border-l-2 border-[#EED4B7] pl-0 sm:pl-3 pt-0 text-center sm:text-left">
-                Total: {totalBackpack}/{totalCapacity}
-              </div>
-            )}
-          </div>
-        )}
       </div>
     </div>
   );
