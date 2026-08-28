@@ -82,7 +82,7 @@ export const DEFAULT_ELEMENT_CONFIGS: {
   };
   // Per-Character settings
   characters: Record<string, Partial<ElementSetting>>;
-  // Per-Trash Item settings (by item.id: banana, apple, carrot, can, glass, cd, battery, paint, bulb)
+  // Per-Trash Item settings (by item.id: banana, sayur, apple, can, botolAir, kertasKoran, battery, kalengBesi, bulb)
   trashItems: Record<string, Partial<ElementSetting>>;
   // Per-Trash Can settings (by type: ORGANIC, RECYCLABLE, B3, RESIDUE)
   trashCans: Record<string, Partial<ElementSetting>>;
@@ -107,15 +107,15 @@ export const DEFAULT_ELEMENT_CONFIGS: {
 
   // Specific settings per trash item ID
   trashItems: {
-    apple:   { yOffset: 0.80, sizeScale: 0.45 },
-    banana:  { yOffset: 0.80, sizeScale: 0.45 },
-    carrot:  { yOffset: 0.80, sizeScale: 0.45 },
-    can:     { yOffset: 0.80, sizeScale: 0.45 },
-    glass:   { yOffset: 0.80, sizeScale: 0.45 },
-    cd:      { yOffset: 0.80, sizeScale: 0.45 },
-    battery: { yOffset: 0.80, sizeScale: 0.45 },
-    paint:   { yOffset: 0.80, sizeScale: 0.45 },
-    bulb:    { yOffset: 0.80, sizeScale: 0.45 },
+    apple:     { yOffset: 0.80, sizeScale: 0.45 },
+    banana:    { yOffset: 0.80, sizeScale: 0.45 },
+    sayur:     { yOffset: 0.80, sizeScale: 0.45 },
+    can:       { yOffset: 0.80, sizeScale: 0.45 },
+    botolAir:  { yOffset: 0.80, sizeScale: 0.45 },
+    kertasKoran: { yOffset: 0.80, sizeScale: 0.45 },
+    battery:   { yOffset: 0.80, sizeScale: 0.45 },
+    kalengBesi: { yOffset: 0.80, sizeScale: 0.45 },
+    bulb:      { yOffset: 0.80, sizeScale: 0.45 },
   },
 
   // Specific settings per trash can type
@@ -490,15 +490,16 @@ export default function GridMap({
       RECYCLABLE_can: tongAnorganik,
       B3_can: tongB3,
 
-      // Trash items
+      // Trash items (keyed by the exact item.id used in levels.ts TRASH_ITEMS)
       banana: svgKulitPisang,
-      carrot: svgSayur,
+      sayur: svgSayur,
       apple: svgApel,
       can: svgKalengMinuman,
-      glass: svgBotolAir,
-      cd: svgKertasKoran,
+      botolAir: svgBotolAir,
+      kertasKoran: svgKertasKoran,
       battery: svgBaterai,
-      paint: svgKalengBesi,
+      kalengBesi: svgKalengBesi,
+      bulb: svgLampu,
       bgGrid: bgGrid,
 
       // Rock & Wall grid assets
