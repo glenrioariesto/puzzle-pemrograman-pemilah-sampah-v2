@@ -16,13 +16,10 @@ import tongOrganik from '../../../../assets/Wadah Sampah Hijau.webp';
 import tongAnorganik from '../../../../assets/Wadah Sampah Kuning.webp';
 import tongB3 from '../../../../assets/Wadah Sampah Merah.webp';
 
-// WebM & MOV assets for trash can buang (DROP) animation
+// WebM assets for trash can buang (DROP) animation
 import canOrganikWebm from '../../../../assets/wadah_sampah_hijau.webm';
 import canAnorganikWebm from '../../../../assets/wadah_sampah_kuning.webm';
 import canB3Webm from '../../../../assets/wadah_sampah_merah.webm';
-import canOrganikMov from '../../../../assets/Wadah Sampah Hijau.mov';
-import canAnorganikMov from '../../../../assets/Wadah Sampah Kuning.mov';
-import canB3Mov from '../../../../assets/Wadah Sampai Merah.mov';
 
 import charOrganikWalk from '../../../../assets/char_organik_walk.webm';
 import charOrganikPick from '../../../../assets/char_organik_pick.webm';
@@ -401,8 +398,8 @@ export default function GridMap({
     dropVid.load();
     dropVideoRef.current = dropVid;
 
-    // Create trash can drop animation videos
-    const createCanVideo = (webmSrc: string, movSrc: string) => {
+    // Create trash can drop animation videos (WebM only)
+    const createCanVideo = (webmSrc: string) => {
       const vid = document.createElement('video');
       vid.loop = false;
       vid.muted = true;
@@ -415,18 +412,13 @@ export default function GridMap({
       sWebm.type = 'video/webm';
       vid.appendChild(sWebm);
 
-      const sMov = document.createElement('source');
-      sMov.src = movSrc;
-      sMov.type = 'video/quicktime';
-      vid.appendChild(sMov);
-
       vid.load();
       return vid;
     };
 
-    const orgVid = createCanVideo(canOrganikWebm, canOrganikMov);
-    const recVid = createCanVideo(canAnorganikWebm, canAnorganikMov);
-    const b3Vid = createCanVideo(canB3Webm, canB3Mov);
+    const orgVid = createCanVideo(canOrganikWebm);
+    const recVid = createCanVideo(canAnorganikWebm);
+    const b3Vid = createCanVideo(canB3Webm);
 
     canVideosRef.current = {
       ORGANIC: orgVid,
@@ -599,7 +591,7 @@ export default function GridMap({
     const findObstacle = (x: number, y: number) =>
       obstacles.find(o => o.pos.x === x && o.pos.y === y);
 
-    // 1. Draw Grid Background Image (assets/bg-grid.webp)
+    // 1. Draw Grid Background Image (assets/bg-grid-v2.svg)
     const bgImg = imagesRef.current['bgGrid'];
     if (bgImg) {
       ctx.drawImage(bgImg, padX, padY, width * cellSizeVal, height * cellSizeVal);
