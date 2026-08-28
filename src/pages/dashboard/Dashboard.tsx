@@ -6,8 +6,12 @@
 import React from 'react';
 import { GameLevel, LevelHighScore } from '../../types';
 import { ChevronRight, Volume2, VolumeX } from 'lucide-react';
-import logoPusbuk from '@/assets/logo-pusbuk.webp';
+import logoPusbuk from '@/assets/logo-jenama.webp?v2';
 import bgBackground from '@/assets/background.webp';
+import ObjectivesModal from './ObjectivesModal';
+
+// Tampilkan modal tujuan pembelajaran hanya sekali per sesi (saat masuk dashboard dari splash)
+let objectivesShownThisSession = false;
 
 interface DashboardProps {
   levels: GameLevel[];
@@ -68,6 +72,14 @@ export default function Dashboard({
   isMuted,
   onToggleMute
 }: DashboardProps) {
+  const [showObjectives, setShowObjectives] = React.useState<boolean>(() => {
+    if (!objectivesShownThisSession) {
+      objectivesShownThisSession = true;
+      return true;
+    }
+    return false;
+  });
+
   return (
     <div className="h-screen w-full flex flex-col justify-center items-center relative overflow-hidden antialiased py-0 px-0 lg:py-6 lg:px-6 xl:py-8 xl:px-8 select-none bg-stone-900">
       {/* Background Image with blur & opacity-60 */}
@@ -100,7 +112,7 @@ export default function Dashboard({
       </div>
 
       {/* Main Container Wrapper */}
-      <div className="z-10 w-full max-w-5xl bg-transparent lg:bg-white/50 lg:backdrop-blur-md border-0 lg:border-[3px] md:border-[5px] border-transparent lg:border-[#0f5a31] rounded-none lg:rounded-2xl md:rounded-[24px] shadow-none lg:shadow-2xl lg:overflow-hidden flex flex-col p-2 lg:p-10 justify-center min-h-0 animate-fade-in transition-all duration-500">
+      <div className={`z-10 w-full max-w-5xl bg-transparent lg:bg-white/50 lg:backdrop-blur-md border-0 lg:border-[3px] md:border-[5px] border-transparent lg:border-[#0f5a31] rounded-none lg:rounded-2xl md:rounded-[24px] shadow-none lg:shadow-2xl lg:overflow-hidden flex flex-col p-2 lg:p-10 justify-center min-h-0 animate-fade-in transition-all duration-500 ${showObjectives ? 'invisible pointer-events-none' : ''}`}>
         
         {/* Header Title */}
         <header className="w-fit lg:max-w-none mx-auto flex flex-col items-center text-center shrink-0 bg-white/80 backdrop-blur-md border-[3px] border-[#0f5a31] rounded-2xl shadow-md py-1.5 px-6 mb-3 lg:bg-transparent lg:backdrop-blur-none lg:border-0 lg:shadow-none lg:p-0 lg:mb-4">
@@ -111,7 +123,7 @@ export default function Dashboard({
 
         {/* 3 Level Cards Grid */}
         <main className="w-full min-h-0">
-          <div className="w-full grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4 lg:gap-5 px-0 pb-0 min-h-0">
+          <div className="w-full flex flex-row items-stretch gap-3 sm:gap-4 lg:gap-5 px-0 pb-0 min-h-0">
             {levels.slice(0, 3).map((level) => {
               const diff = difficultyLabel(level.id);
               const theme = levelGradients(level.id);
@@ -122,7 +134,7 @@ export default function Dashboard({
                 <div
                   key={level.id}
                   onClick={() => onSelectLevel(level.id)}
-                  className={`${theme.cardBg} rounded-2xl sm:rounded-3xl p-4 sm:p-5 md:p-6 text-left flex flex-col justify-between shadow-sm hover:shadow-xl ${theme.hoverBorder} ${theme.hoverGlow} hover:-translate-y-1.5 transition-all duration-500 active:scale-98 group cursor-pointer relative overflow-hidden w-full min-h-[160px] sm:min-h-[200px] md:min-h-[260px]`}
+                  className={`${theme.cardBg} flex-1 rounded-2xl sm:rounded-3xl p-2 sm:p-4 md:p-5 text-left flex flex-col justify-between shadow-sm hover:shadow-xl ${theme.hoverBorder} ${theme.hoverGlow} hover:-translate-y-1.5 transition-all duration-500 active:scale-98 group cursor-pointer relative overflow-hidden w-full min-h-[160px] sm:min-h-[200px] md:min-h-[240px]`}
                 >
                   {/* Card Top: Level Number + Difficulty Badge */}
                   <div className="flex items-start justify-between shrink-0">
@@ -172,6 +184,12 @@ export default function Dashboard({
           </div>
         </main>
       </div>
+
+      {/* Level Objectives Modal - tampil sekali saat masuk dashboard */}
+      <ObjectivesModal
+        isOpen={showObjectives}
+        onClose={() => setShowObjectives(false)}
+      />
     </div>
   );
 }

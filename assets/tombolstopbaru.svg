@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg id="Layer_2" data-name="Layer 2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 203.37 74.27">
+<svg id="Layer_2" data-name="Layer 2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 296.05 54.56">
   <defs>
     <style>
       @font-face {
@@ -8,51 +8,44 @@
         font-weight: normal;
         font-style: normal;
       }
-      .cls-1 {
-        letter-spacing: -.03em;
+
+      .cls-text {
+        font-family: 'CCRegeneration', CCRegenerationVariable-Regular, sans-serif;
+        font-size: 19.65px;
+        fill: #ffffff;
       }
 
-      .cls-2, .cls-3 {
-        fill: #fff;
+      .cls-base-shadow {
+        fill: #a00510;
       }
 
-      .cls-4 {
-        letter-spacing: 0em;
+      .cls-surface {
+        fill: #d81f26;
       }
 
-      .cls-3 {
-        font-family: CCRegenerationVariable-Regular, CCRegeneration;
-        font-size: 26.75px;
-        font-variation-settings: 'wght' 400, 'ital' 0;
-      }
-
-      .cls-5 {
+      .cls-icon-border {
         fill: #e2e2e2;
       }
 
-      .cls-6 {
-        fill: #487c6d;
+      .cls-icon-bg {
+        fill: #ffffff;
       }
 
-      .cls-7 {
-        fill: #5e9c8a;
-      }
-
-      .cls-8 {
-        fill: #2b2b2b;
+      .cls-icon-shape {
+        fill: #d81f26;
       }
     </style>
   </defs>
   <g id="Layer_1-2" data-name="Layer 1">
     <g>
-      <rect class="cls-6" x="0" y="8.35" width="203.37" height="65.92" rx="11.32" ry="11.32"/>
+      <rect class="cls-base-shadow" x="0" y="6.13" width="296.05" height="48.42" rx="8.31" ry="8.31"/>
       <g>
-        <rect class="cls-7" width="203.37" height="65.92" rx="11.32" ry="11.32"/>
-        <rect class="cls-5" x="3.3" y="3.3" width="59.33" height="59.33" rx="10.57" ry="10.57"/>
-        <rect class="cls-2" x="7.46" y="5.99" width="51" height="51" rx="9.09" ry="9.09"/>
-        <path class="cls-6" d="M46.11,29.47l-22.08-12.15c-1.53-.84-3.41.27-3.41,2.02v24.3c0,1.75,1.88,2.86,3.41,2.02l22.08-12.15c1.59-.87,1.59-3.16,0-4.03Z"/>
+        <rect class="cls-surface" width="296.05" height="48.42" rx="8.31" ry="8.31"/>
+        <rect class="cls-icon-border" x="2.42" y="2.42" width="43.58" height="43.58" rx="7.77" ry="7.77"/>
+        <rect class="cls-icon-bg" x="5.48" y="4.4" width="37.46" height="37.46" rx="6.68" ry="6.68"/>
+        <path class="cls-icon-shape" d="M14.98,32.07c2.19,4.14,6.63,6.3,11.18,5.3,4.22-.92,7.76-4.74,7.78-9.31l.04-11.56c0-1-.78-1.84-1.67-1.89-.98-.06-1.85.55-2,1.58v6.52s-.27.25-.27.25c-.06.06-.25-.19-.29-.26v-9.6c-.04-.98-.81-1.68-1.68-1.74-.97-.07-1.83.57-1.98,1.59v9.76s-.28.26-.28.26c-.06.06-.23-.18-.27-.27v-12.37c-.08-.98-.94-1.67-1.82-1.67-.94,0-1.71.71-1.86,1.7v12.18s-.12.41-.12.41c-.04.12-.31-.14-.4-.27v-9.73c-.13-.99-.95-1.58-1.87-1.58s-1.64.66-1.81,1.63v13.61s-.19.29-.19.29c-.05.07-.27-.08-.32-.15l-2.68-3.67c-.63-.86-1.75-1.07-2.6-.5s-1.06,1.62-.57,2.55l3.69,6.97Z"/>
       </g>
-      <text class="cls-3" transform="translate(88 42.31)"><tspan x="0" y="0">MULAI</tspan></text>
+      <text class="cls-text" transform="translate(131.67 31.08)"><tspan x="0" y="0">STOP</tspan></text>
     </g>
   </g>
 </svg>

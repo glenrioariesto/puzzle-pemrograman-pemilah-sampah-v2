@@ -29,9 +29,9 @@ export const TRASH_ITEMS: { [key: string]: TrashItem } = {
 };
 
 // ─── Fixed layout — identical across ALL levels ───────────────────────────────
-// Only 1 Character: Tukang Sampah starting at x=0, y=3
+// Only 1 Character: Petugas Sampah starting at x=0, y=3
 const FIXED_CHARACTERS: Character[] = [
-  { id: 'ORGANIC', name: 'Tukang Sampah', color: 'bg-indigo-650', borderColor: 'border-indigo-800', startPos: { x: 0, y: 3 } },
+  { id: 'ORGANIC', name: 'Petugas Sampah', color: 'bg-indigo-650', borderColor: 'border-indigo-800', startPos: { x: 0, y: 3 } },
 ];
 
 // Trash cans side-by-side on the bottom floor (y=3) at the right edge
@@ -46,7 +46,7 @@ export const LEVELS: GameLevel[] = [
   {
     id: 1,
     name: "1. Pemilahan Dasar & Tumpukan Tas",
-    description: "Kendalikan Tukang Sampah untuk mengambil Apel dan Kaleng Minuman. Ingat aturan tumpukan tas: Sampah yang TERAKHIR diambil berada di posisi paling atas tas dan HARUS dibuang TERLEBIH DAHULU! Hati-hati ada rintangan batu di jalan!",
+    description: "Kendalikan Petugas Sampah untuk mengambil Apel dan Kaleng Minuman. Ingat aturan tumpukan tas: Sampah yang TERAKHIR diambil berada di posisi paling atas tas dan HARUS dibuang TERLEBIH DAHULU! Hati-hati ada rintangan batu di jalan!",
     gridSize: { width: 16, height: 4 },
     characters: FIXED_CHARACTERS,
     startPos: { x: 0, y: 3 },

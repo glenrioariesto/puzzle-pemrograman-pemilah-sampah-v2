@@ -47,6 +47,11 @@ export default function App() {
     initUserInteractionListener();
   }, []);
 
+  // Auto-show the fullscreen prompt every time the page opens or refreshes
+  useEffect(() => {
+    setShowFullscreenPrompt(true);
+  }, []);
+
   // Sync mute state with background music
   useEffect(() => {
     syncBgmState(isMuted);
@@ -97,13 +102,7 @@ export default function App() {
 
   const handleStartFromSplash = () => {
     playClickSound();
-    const isFullscreenSupported = typeof document !== 'undefined' && !!document.documentElement.requestFullscreen;
-    const isCurrentlyFullscreen = typeof document !== 'undefined' && !!document.fullscreenElement;
-    if (isFullscreenSupported && !isCurrentlyFullscreen) {
-      setShowFullscreenPrompt(true);
-    } else {
-      setPage('dashboard');
-    }
+    setPage('dashboard');
   };
 
   const enterFullscreen = async () => {
@@ -115,7 +114,6 @@ export default function App() {
       console.warn("Fullscreen permission denied or not supported by browser", err);
     }
     setShowFullscreenPrompt(false);
-    setPage('dashboard');
   };
 
   const navigateToDashboard = () => {
@@ -162,7 +160,6 @@ export default function App() {
                 type="button"
                 onClick={() => {
                   setShowFullscreenPrompt(false);
-                  setPage('dashboard');
                 }}
                 className="flex-1 bg-white hover:bg-stone-100 border border-[#EED4B7] text-stone-700 font-bold py-2.5 rounded-xl transition-all active:scale-95 cursor-pointer"
               >

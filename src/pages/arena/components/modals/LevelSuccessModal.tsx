@@ -69,7 +69,7 @@ export default function LevelSuccessModal({
         </div>
 
         {/* Action Buttons */}
-        <div className="flex flex-col gap-2 pt-2">
+        <div className="flex flex-col gap-2 p-2">
           <button
             type="button"
             onClick={() => { playSound('click'); onNextLevel(); }}

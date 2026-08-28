@@ -46,7 +46,7 @@ export default function Modal({
         )}
 
         {/* Content */}
-        <div className="p-4 sm:p-6 overflow-y-auto flex-1 text-stone-800">
+        <div className="overflow-y-auto flex-1 text-stone-800">
           {children}
         </div>
 

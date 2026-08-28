@@ -39,7 +39,7 @@ import svgKertasKoran from '../../../../assets/kertas-koran.svg';
 import svgKulitPisang from '../../../../assets/kulit-pisang.svg';
 import svgLampu from '../../../../assets/lampu.svg';
 import svgSayur from '../../../../assets/sayur.svg';
-import bgGrid from '../../../../assets/bg-grid.webp';
+import bgGrid from '../../../../assets/bg-grid-v2.svg';
 
 // Import rock wall grid assets (rock-1.webp to rock-9.webp)
 import rock1 from '../../../../assets/rock-1.webp';
@@ -179,7 +179,7 @@ const CHARACTER_COLORS: Record<CharacterId, { bg: string; border: string; eye: s
     bg: '#10B981', // emerald-500
     border: '#047857', // emerald-700
     eye: '#ffffff',
-    label: 'Tukang Sampah',
+    label: 'Petugas Sampah',
   },
   RECYCLABLE: {
     bg: '#F59E0B', // amber-500
@@ -1082,27 +1082,27 @@ export default function GridMap({
           className="block w-full bg-[#6DCC7E] h-full"
         />
 
-        {/* Level Badge — Pojok Kiri (ukuran h-8 seperti tombol kontrol, bg #0192D5, teks putih) */}
+        {/* Level Badge — Pojok Kiri */}
         <div
           id="level-badge"
-          className="absolute top-3 left-3 z-10 h-8 flex items-center justify-center bg-[#0192D5] border border-[#017bb3] rounded-lg px-3 text-white font-extrabold text-xs sm:text-sm font-sans tracking-wide shadow-sm select-none"
+          className="absolute top-3 left-3 z-10 h-8 sm:h-10 md:h-11 flex items-center justify-center bg-[#0192D5] border border-[#017bb3] rounded-lg sm:rounded-xl px-3 sm:px-4 text-white font-extrabold text-xs sm:text-sm md:text-base lg:text-lg font-sans tracking-wide shadow-sm select-none"
         >
           Level {levelId}
         </div>
 
         {/* Controls Container (Backpack Overlay + Help + Zoom) */}
-        <div className="absolute top-3 right-3 z-10 flex flex-row gap-1.5 items-start">
+        <div className="absolute top-3 right-3 z-10 flex flex-row gap-1.5 sm:gap-2 items-start">
           {/* Multi-character Backpack overlay — Disamping kiri tombol Tampilkan Detail Misi & Petunjuk, ukuran h-8 */}
           {showBackpack && (
             <div
               id="backpack-overlay"
-              className="h-8 flex items-center gap-1.5 sm:gap-2 bg-white/95 backdrop-blur-md border border-[#EED4B7] rounded-lg px-2 sm:px-2.5 shadow-sm select-none flex-shrink-0"
+              className="h-8 sm:h-10 md:h-11 flex items-center gap-1.5 sm:gap-2 bg-white/95 backdrop-blur-md border border-[#EED4B7] rounded-lg sm:rounded-xl px-2 sm:px-3 shadow-sm select-none flex-shrink-0"
             >
               {characters.map(c => {
                 const colors = CHARACTER_COLORS[c.id];
                 return (
                   <div key={c.id} className="flex items-center gap-1 sm:gap-1.5">
-                    <span className="text-xs sm:text-sm">{CHARACTER_EMOJIS[c.id]}</span>
+                    <span className="text-xs sm:text-lg">{CHARACTER_EMOJIS[c.id]}</span>
                     <div className="flex items-center gap-0.5 sm:gap-1">
                       {Array.from({ length: c.backpackCapacity }, (_, i) => {
                         const item = c.backpack[i];
@@ -1112,21 +1112,21 @@ export default function GridMap({
                               key={item.id}
                               src={item.image}
                               alt={item.name}
-                              className="w-4 h-4 sm:w-4.5 sm:h-4.5 object-contain drop-shadow-xs"
+                              className="w-4 h-4 sm:w-5 sm:h-5 md:w-5.5 md:h-5.5 object-contain drop-shadow-xs"
                             />
                           ) : (
-                            <span key={item.id} className="text-xs leading-none">{item.emoji}</span>
+                            <span key={item.id} className="text-xs sm:text-base leading-none">{item.emoji}</span>
                           )
                         ) : (
                           <span
                             key={`empty-${c.id}-${i}`}
-                            className="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-xs border border-dashed border-[#EED4B7] bg-[#FEF8F0]"
+                            className="w-3.5 h-3.5 sm:w-4.5 sm:h-4.5 md:w-5 md:h-5 rounded-xs border border-dashed border-[#EED4B7] bg-[#FEF8F0]"
                           />
                         );
                       })}
                     </div>
                     <span
-                      className={`text-[10px] font-mono font-black ${c.backpack.length === 0 ? 'text-stone-400' : ''}`}
+                      className={`text-[10px] sm:text-xs md:text-sm font-mono font-black ${c.backpack.length === 0 ? 'text-stone-400' : ''}`}
                       style={{ color: c.backpack.length > 0 ? colors.border : undefined }}
                     >
                       {c.backpack.length}/{c.backpackCapacity}
@@ -1135,7 +1135,7 @@ export default function GridMap({
                 );
               })}
               {characters.length > 1 && totalBackpack > 0 && (
-                <div className="text-[10px] text-stone-600 font-mono font-black border-l border-[#EED4B7] pl-1.5">
+                <div className="text-[10px] sm:text-xs md:text-sm text-stone-600 font-mono font-black border-l border-[#EED4B7] pl-1.5">
                   {totalBackpack}/{totalCapacity}
                 </div>
               )}
@@ -1147,10 +1147,10 @@ export default function GridMap({
             <button
               type="button"
               onClick={onShowHints}
-              className="w-8 h-8 flex items-center justify-center bg-white/90 hover:bg-white border border-[#EED4B7] rounded-lg text-amber-955 hover:text-indigo-600 shadow-sm cursor-pointer transition-colors active:scale-95 flex-shrink-0"
+              className="w-8 h-8 sm:w-10 sm:h-10 md:w-11 md:h-11 flex items-center justify-center bg-white/90 hover:bg-white border border-[#EED4B7] rounded-lg sm:rounded-xl text-amber-955 hover:text-indigo-600 shadow-sm cursor-pointer transition-colors active:scale-95 flex-shrink-0"
               title="Tampilkan Detail Misi & Petunjuk"
             >
-              <HelpCircle className="w-4.5 h-4.5" />
+              <HelpCircle className="w-4.5 h-4.5 sm:w-5.5 sm:h-5.5 md:w-6 md:h-6" />
             </button>
           )}
 
@@ -1159,21 +1159,21 @@ export default function GridMap({
             <button
               type="button"
               onClick={() => setZoom(prev => Math.min(3, prev * 1.2))}
-              className="w-8 h-8 flex items-center justify-center bg-white/90 hover:bg-white border border-[#EED4B7] rounded-lg text-sm font-bold text-stone-700 shadow-sm cursor-pointer transition-colors"
+              className="w-8 h-8 sm:w-10 sm:h-10 md:w-11 md:h-11 flex items-center justify-center bg-white/90 hover:bg-white border border-[#EED4B7] rounded-lg sm:rounded-xl text-sm sm:text-lg md:text-xl font-bold text-stone-700 shadow-sm cursor-pointer transition-colors"
             >
               +
             </button>
             <button
               type="button"
               onClick={() => setZoom(prev => Math.max(0.3, prev / 1.2))}
-              className="w-8 h-8 flex items-center justify-center bg-white/90 hover:bg-white border border-[#EED4B7] rounded-lg text-sm font-bold text-stone-700 shadow-sm cursor-pointer transition-colors"
+              className="w-8 h-8 sm:w-10 sm:h-10 md:w-11 md:h-11 flex items-center justify-center bg-white/90 hover:bg-white border border-[#EED4B7] rounded-lg sm:rounded-xl text-sm sm:text-lg md:text-xl font-bold text-stone-700 shadow-sm cursor-pointer transition-colors"
             >
               −
             </button>
             <button
               type="button"
               onClick={() => { setZoom(1); setOffset({ x: 0, y: 0 }); }}
-              className="w-8 h-8 flex items-center justify-center bg-white/90 hover:bg-white border border-[#EED4B7] rounded-lg text-[10px] font-bold text-stone-500 shadow-sm cursor-pointer transition-colors"
+              className="w-8 h-8 sm:w-10 sm:h-10 md:w-11 md:h-11 flex items-center justify-center bg-white/90 hover:bg-white border border-[#EED4B7] rounded-lg sm:rounded-xl text-[10px] sm:text-sm md:text-base font-bold text-stone-500 shadow-sm cursor-pointer transition-colors"
               title="Reset zoom"
             >
               ⟲
@@ -1181,10 +1181,10 @@ export default function GridMap({
             <button
               type="button"
               onClick={() => setShowBackpack(prev => !prev)}
-              className="w-8 h-8 flex items-center justify-center bg-white/90 hover:bg-white border border-[#EED4B7] rounded-lg shadow-sm cursor-pointer transition-colors"
+              className="w-8 h-8 sm:w-10 sm:h-10 md:w-11 md:h-11 flex items-center justify-center bg-white/90 hover:bg-white border border-[#EED4B7] rounded-lg sm:rounded-xl shadow-sm cursor-pointer transition-colors"
               title={showBackpack ? "Sembunyikan status tas" : "Tampilkan status tas"}
             >
-              <Backpack className={`w-4 h-4 ${showBackpack ? 'text-indigo-650' : 'text-stone-400'}`} />
+              <Backpack className={`w-4 h-4 sm:w-5.5 sm:h-5.5 md:w-6 md:h-6 ${showBackpack ? 'text-indigo-650' : 'text-stone-400'}`} />
             </button>
           </div>
         </div>

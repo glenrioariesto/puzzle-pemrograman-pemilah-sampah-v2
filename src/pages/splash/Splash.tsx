@@ -5,7 +5,7 @@
 
 import React from 'react';
 import { Volume2, VolumeX } from 'lucide-react';
-import logoPusbuk from '@/assets/logo-pusbuk.webp';
+import logoPusbuk from '@/assets/logo-jenama.webp?v2';
 import bgBackground from '@/assets/background.webp';
 import imgTitleTop from '@/assets/title-top.webp';
 import imgTitleBottom from '@/assets/title-bottom.webp';

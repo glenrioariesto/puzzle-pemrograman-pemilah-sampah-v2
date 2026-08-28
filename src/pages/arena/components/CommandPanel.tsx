@@ -6,7 +6,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Instruction, CommandAction, GameLevel, CharacterId } from '../../../types';
 import InstructionBlock from './InstructionBlock';
-import { AlertCircle, Square } from 'lucide-react';
 
 // Import character images
 import charOrganik from '../../../../assets/hijau-angkat.svg';
@@ -15,14 +14,13 @@ import charB3 from '../../../../assets/merah-angkat.svg';
 
 // Import command button images
 import imgAtas from '../../../../assets/tombol-atas.svg';
-import imgBawah from '../../../../assets/tombol-bawah.svg';
 import imgKiri from '../../../../assets/tombol-kiri.svg';
 import imgKanan from '../../../../assets/tombol-kanan.svg';
 import imgAmbil from '../../../../assets/tombol-ambil.svg';
 import imgBuang from '../../../../assets/tombol-buang.svg';
 import imgReset from '../../../../assets/tombol-reset.svg';
-import imgMulai from '../../../../assets/tombol-mulai.svg';
-import imgStop from '../../../../assets/tombol-stop.svg';
+import imgMulaiBaru from '../../../../assets/tombolmulaibaru.svg';
+import imgStopBaru from '../../../../assets/tombolstopbaru.svg';
 
 interface CommandPanelProps {
   level: GameLevel;
@@ -84,15 +82,11 @@ export default function CommandPanel({
   onAddCommand,
   onClearInstructions,
   onDeleteCommand,
-  onMoveCommandUp,
-  onMoveCommandDown,
   onSelectCharacter,
   isExecuting,
   onStartExecution,
   onStopExecution,
   activeInstructionId,
-  execSpeed,
-  onSetExecSpeed,
   onReset,
   totalBlockCount,
   characterBlocksCount,
@@ -101,12 +95,12 @@ export default function CommandPanel({
   const blockCount = totalBlockCount;
   const isOverBlockLimit = level.maxInstructions ? blockCount > level.maxInstructions : false;
 
-  // --- Drag and Drop Pointer System (Escape Parking style) ---
+  // --- Drag and Drop Pointer System ---
   const containerRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
   itemRefs.current = []; // Reset on render
 
-  // Hot-path refs — mutated imperatively, never cause re-renders
+  // Hot-path refs
   const dragIdxRef      = useRef<number | null>(null);
   const hoverIdxRef     = useRef<number | null>(null);
   const isOutsideRef    = useRef(false);
@@ -115,7 +109,7 @@ export default function CommandPanel({
   const dragScrollStart = useRef(0);
   const snapRects       = useRef<{ top: number; left: number; width: number; height: number }[]>([]);
 
-  // React state — only className / child changes, minimal re-renders
+  // React state
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [hoverIndex,   setHoverIndex]   = useState<number | null>(null);
   const [isOutside,    setIsOutside]    = useState(false);
@@ -160,7 +154,7 @@ export default function CommandPanel({
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>, index: number) => {
     if (isExecuting || e.button !== 0) return;
 
-    // Snapshot all item rects BEFORE any visual change (layout still pristine)
+    // Snapshot all item rects BEFORE any visual change
     const rects: { top: number; left: number; width: number; height: number }[] = [];
     for (let i = 0; i < instructions.length; i++) {
       const el = itemRefs.current[i];
@@ -198,7 +192,6 @@ export default function CommandPanel({
     const deltaX = e.clientX - dragStartX.current;
     const deltaY = e.clientY - dragStartY.current;
 
-    // Move dragged item using deltaX and deltaY + scrollDiff (for visual relative mapping inside scroll panel)
     applyDragXY(dragIdx, deltaX, deltaY + scrollDiff);
 
     // Outside detection
@@ -243,7 +236,7 @@ export default function CommandPanel({
     }
   };
 
-  const onWindowPointerUp = (e: PointerEvent) => {
+  const onWindowPointerUp = () => {
     const dragIdx = dragIdxRef.current;
     if (dragIdx === null) return;
 
@@ -367,27 +360,39 @@ export default function CommandPanel({
             </div>
 
             {/* Mulai / Hentikan Button placed BELOW the grid */}
-            <div className="w-full mt-1 flex justify-center" id="mulai-hentikan-wrapper">
+            <div className="w-full mt-1 sm:mt-1.5 flex justify-center items-center" id="mulai-hentikan-wrapper">
               {isExecuting ? (
                 <button
                   type="button"
                   onClick={onStopExecution}
-                  className="w-[50%] select-none flex items-center justify-center transition-all cursor-pointer p-0 bg-transparent border-none outline-none active:scale-95 hover:scale-[1.02]"
+                  className="w-full select-none flex items-center justify-center transition-all cursor-pointer p-0 bg-transparent border-none outline-none active:scale-95 hover:scale-[1.02] focus:outline-none"
+                  title="Hentikan Program"
                   id="stop-execution-btn"
                 >
-                  <img src={imgStop} alt="Hentikan" className="w-full h-auto object-contain" />
+                  <img
+                    src={imgStopBaru}
+                    alt="Hentikan"
+                    className="w-full h-auto object-contain drop-shadow-sm select-none pointer-events-none"
+                  />
                 </button>
               ) : (
                 <button
                   type="button"
                   onClick={onStartExecution}
                   disabled={instructions.length === 0}
-                  className={`w-[50%] select-none flex items-center justify-center transition-all cursor-pointer p-0 bg-transparent border-none outline-none ${
-                    instructions.length === 0 ? 'opacity-40 cursor-not-allowed' : 'active:scale-95 hover:scale-[1.02] animate-pulse-gentle'
+                  className={`w-full select-none flex items-center justify-center transition-all cursor-pointer p-0 bg-transparent border-none outline-none focus:outline-none ${
+                    instructions.length === 0
+                      ? 'opacity-40 cursor-not-allowed'
+                      : 'active:scale-95 hover:scale-[1.02] hover:drop-shadow-md animate-pulse-gentle'
                   }`}
+                  title={instructions.length === 0 ? 'Susun instruksi terlebih dahulu' : 'Mulai Jalankan Program'}
                   id="run-execution-btn"
                 >
-                  <img src={imgMulai} alt="Mulai" className="w-full h-auto object-contain" />
+                  <img
+                    src={imgMulaiBaru}
+                    alt="Mulai"
+                    className="w-full h-auto object-contain drop-shadow-sm select-none pointer-events-none"
+                  />
                 </button>
               )}
             </div>

@@ -21,7 +21,7 @@ export default function LevelFailModal({
   // Pastikan pesan yang tampil adalah pesan Bahasa Indonesia yang santun dan edukatif
   const displayMessage =
     !gameResult || gameResult === 'FAILED'
-      ? 'Tukang Sampah belum berhasil menyelesaikan tugas pemilahan dengan tepat. Yuk periksa kembali urutan langkahmu!'
+      ? 'Petugas Sampah belum berhasil menyelesaikan tugas pemilahan dengan tepat. Yuk periksa kembali urutan langkahmu!'
       : gameResult;
 
   return (
@@ -37,11 +37,11 @@ export default function LevelFailModal({
       }
     >
       <div className="space-y-4 text-center">
-        <div className="p-3.5 bg-amber-50 border border-amber-200 text-amber-900 text-xs font-medium rounded-xl leading-relaxed text-left">
+        <div className="p-3.5 bg-amber-50 border border-amber-200 text-amber-900 text-xs font-medium leading-relaxed text-left">
           {displayMessage}
         </div>
 
-        <div className="flex flex-col gap-2 pt-2">
+        <div className="flex flex-col gap-2 p-2">
           <button
             type="button"
             onClick={() => { playSound('click'); onRetry(); }}

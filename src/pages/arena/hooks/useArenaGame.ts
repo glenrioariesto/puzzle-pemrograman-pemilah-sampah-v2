@@ -109,7 +109,7 @@ export function useArenaGame(
 
   // Initialize level upon load
   const getCharacterLabel = (id: CharacterId) => {
-    return 'Tukang Sampah';
+    return 'Petugas Sampah';
   };
 
   useEffect(() => {
@@ -121,8 +121,8 @@ export function useArenaGame(
     activeTrashRef.current = trash;
     setLogs([
       `[Sistem] Memuat Level ${level.id}: ${level.name}`,
-      `[Sistem] Tukang Sampah siap! 🤖`,
-      `[Sistem] Susun program untuk mengendalikan Tukang Sampah.`
+      `[Sistem] Petugas Sampah siap! 🤖`,
+      `[Sistem] Susun program untuk mengendalikan Petugas Sampah.`
     ]);
     setGameResult(null);
     setShowResultModal(false);
@@ -273,7 +273,7 @@ export function useArenaGame(
     const totalCmds = Object.values(newCharacters).reduce((s, c) => s + c.compiledSteps.length, 0);
     setLogs([
       `[Sistem] Memulai simulasi...`,
-      `[Sistem] Tukang Sampah: ${totalCmds} langkah terkompilasi.`
+      `[Sistem] Petugas Sampah: ${totalCmds} langkah terkompilasi.`
     ]);
   };
 
@@ -329,7 +329,7 @@ export function useArenaGame(
     setShowResultModal(false);
     setLogs([
       `[Sistem] Reset: Simulasi diatur ulang & program dikosongkan.`,
-      `[Sistem] Susun program untuk menyusun langkah Tukang Sampah.`
+      `[Sistem] Susun program untuk menyusun langkah Petugas Sampah.`
     ]);
   };
 
