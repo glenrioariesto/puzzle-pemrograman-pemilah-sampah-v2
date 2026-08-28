@@ -195,12 +195,6 @@ const CHARACTER_COLORS: Record<CharacterId, { bg: string; border: string; eye: s
   },
 };
 
-const CHARACTER_EMOJIS: Record<CharacterId, string> = {
-  ORGANIC: '🧹',
-  RECYCLABLE: '🎒',
-  B3: '🗑️',
-};
-
 const COLORS = {
   gridBg: '#FAF5EF',
   cellBg: '#ffffff',
@@ -1102,7 +1096,7 @@ export default function GridMap({
                 const colors = CHARACTER_COLORS[c.id];
                 return (
                   <div key={c.id} className="flex items-center gap-1 sm:gap-1.5">
-                    <span className="text-xs sm:text-lg">{CHARACTER_EMOJIS[c.id]}</span>
+                    <Backpack className="w-4 h-4 sm:w-5 sm:h-5 md:w-5.5 md:h-5.5 text-indigo-600" />
                     <div className="flex items-center gap-0.5 sm:gap-1">
                       {Array.from({ length: c.backpackCapacity }, (_, i) => {
                         const item = c.backpack[i];
