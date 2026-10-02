@@ -120,7 +120,7 @@ export default function Arena({
       facingDir: state?.facingDir || 'RIGHT',
       trailPositions: state?.trailPositions || [],
       backpack: state?.backpack || [],
-      backpackCapacity: level.maxCapacity,
+      backpackCapacity: level.maxCapacity ?? level.trashItems.length,
       activeAction: activeStep?.action || null,
       activeInstructionId: state?.activeInstructionId || null,
     };
@@ -157,20 +157,17 @@ export default function Arena({
         'LEFT', 'DROP'
       ];
     } else if (levelId === 3) {
-      // Level 3 (Kapasitas 3, Strategi Dua Trip):
-      // Trip 1: x=0 -> KANAN ke x=1 AMBIL (Apel) -> LONCAT batu x=2 ke x=3 AMBIL (Kaleng) -> KANAN ke x=4 LONCAT batu x=5 ke x=6 -> KANAN ke x=7 AMBIL (Sayur) [Tas Penuh 3/3] -> KANAN ke x=8 LONCAT batu x=9 ke x=10 -> KANAN 3x ke x=13 BUANG (Sayur) -> KANAN ke x=14 BUANG (Kaleng) -> KIRI ke x=13 BUANG (Apel) [Tas Kosong]
-      // Trip 2: KIRI 2x ke x=11 AMBIL (Baterai) -> KANAN 4x ke x=15 BUANG (Baterai) (Total 26 Langkah)
+      // Level 3 (Kapasitas Tas 4 Slot - Sesuai 4 Sampah):
+      // Ambil 4 sampah berurutan (Apel x=1, Kaleng x=3, Sayur x=7, Baterai x=11) -> Buang Baterai di Tong Merah (x=15) -> Buang Sayur di Tong Hijau (x=13) -> Buang Kaleng di Tong Kuning (x=14) -> Buang Apel di Tong Hijau (x=13) (Total 24 Langkah, 3 Bintang)
       actions = [
         'RIGHT', 'PICK',
         'UP', 'PICK',
         'RIGHT', 'UP', 'RIGHT', 'PICK',
-        'RIGHT', 'UP',
-        'RIGHT', 'RIGHT', 'RIGHT',
-        'DROP',
+        'RIGHT', 'UP', 'RIGHT', 'PICK',
+        'RIGHT', 'RIGHT', 'RIGHT', 'RIGHT', 'DROP',
+        'LEFT', 'LEFT', 'DROP',
         'RIGHT', 'DROP',
-        'LEFT', 'DROP',
-        'LEFT', 'LEFT', 'PICK',
-        'RIGHT', 'RIGHT', 'RIGHT', 'RIGHT', 'DROP'
+        'LEFT', 'DROP'
       ];
     }
 
@@ -213,6 +210,9 @@ export default function Arena({
             obstacles={level.obstacles}
             isExecuting={isExecuting}
             onShowHints={() => { playSound('click'); setShowHintsModal(true); }}
+            isMuted={isMuted}
+            onToggleMute={onToggleMute}
+            onBackToDashboard={onBackToDashboard}
           />
         </div>
 

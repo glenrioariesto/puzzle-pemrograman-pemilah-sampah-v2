@@ -58,7 +58,7 @@ export const LEVELS: GameLevel[] = [
     obstacles: [
       { pos: { x: 5, y: 3 }, type: 'rock', emoji: '🪨' },
     ],
-    maxCapacity: 3,
+    maxCapacity: 2,
     maxInstructions: 30,
     starsThreshold: { three: 18, two: 22 },
     hints: [
@@ -128,19 +128,19 @@ export const LEVELS: GameLevel[] = [
       { pos: { x: 5, y: 3 }, type: 'rock', emoji: '🪨' },
       { pos: { x: 9, y: 3 }, type: 'rock', emoji: '🪨' },
     ],
-    maxCapacity: 3,
+    maxCapacity: 4,
     maxInstructions: 45,
-    starsThreshold: { three: 26, two: 30 },
+    starsThreshold: { three: 24, two: 28 },
     hints: [
-      "1. Kapasitas tas TETAP 3! Karena ada 4 sampah di arena, Anda HARUS buang dulu sebagian sampah ke tong, baru kembali mengambil sisanya!",
-      "2. Trip 1: Ambil Apel (x=1), Kaleng (x=3), dan Sayur (x=7). Tas penuh (3/3)! Lewati Baterai di x=11, lalu buang ketiga sampah di tong sesuai aturan FILO.",
-      "3. Trip 2: Setelah tas kosong, melangkah mundur ke x=11 untuk mengambil Baterai Bekas, lalu buang ke Tong Merah (x=15).",
+      "1. Kapasitas tas adalah 4 slot (sesuai 4 sampah di arena)! Ambil Apel (x=1), Kaleng (x=3), Sayur (x=7), dan Baterai (x=11).",
+      "2. Aturan Tumpukan (FILO): Sampah terakhir diambil (Baterai Bekas) berada di posisi teratas tas dan HARUS dibuang terlebih dahulu!",
+      "3. Urutan buang yang benar: Buang Baterai Bekas ke Tong Merah (x=15) → Buang Sayur ke Tong Hijau (x=13) → Buang Kaleng Minuman ke Tong Kuning (x=14) → Buang Apel ke Tong Hijau (x=13).",
     ],
     ctInsights: {
-      decomposition: "Fase 1 (Trip 1): Ambil 3 sampah pertama (Apel, Kaleng, Sayur) -> Buang di Tong x=13, 14, 13 (Tas Kosong). Fase 2 (Trip 2): Mundur ke x=11 ambil Baterai -> Maju ke Tong Merah x=15 buang Baterai.",
-      pattern:       "Pola Pemrosesan Dua Fase (Batching / Two-Trip): Mengatasi keterbatasan memori buffer tas (kapasitas 3) untuk memproses 4 elemen data.",
-      abstraction:   "Fokus pada pembagian kelompok sampah dan rute bolak-balik pembuangan paling efisien.",
-      algorithm:     "Trip 1: Kanan 1x -> Ambil -> Loncat -> Ambil -> Kanan 1x -> Loncat -> Kanan 1x -> Ambil -> Kanan 1x -> Loncat -> Kanan 3x -> Buang (13) -> Kanan 1x -> Buang (14) -> Kiri 1x -> Buang (13). Trip 2: Kiri 2x -> Ambil (11) -> Kanan 4x -> Buang (15) (Total 26 Langkah).",
+      decomposition: "Kumpulkan 4 sampah → Lompati 3 rintangan batu → Buang Baterai ke Tong Merah (15) → Buang Sayur ke Tong Hijau (13) → Buang Kaleng ke Tong Kuning (14) → Buang Apel ke Tong Hijau (13).",
+      pattern:       "Struktur Data Tumpukan (Stack FILO): Urutan buang adalah kebalikan dari urutan ambil.",
+      abstraction:   "Memetakan posisi tong sampah dengan item teratas tas untuk meminimalkan langkah.",
+      algorithm:     "Ambil 4 sampah berturut-turut sambil melompati batu → Maju ke Tong Merah (15) Buang Baterai → Mundur ke Tong Hijau (13) Buang Sayur → Maju ke Tong Kuning (14) Buang Kaleng → Mundur ke Tong Hijau (13) Buang Apel (Total 24 Langkah).",
     },
   },
 ];

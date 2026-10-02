@@ -9,7 +9,7 @@
  */
 
 import React, { useRef, useEffect, useState, useCallback } from 'react';
-import { Backpack, HelpCircle } from 'lucide-react';
+import { Backpack, HelpCircle, Volume2, VolumeX, ArrowLeft, Info, X } from 'lucide-react';
 import { GridPos, TrashOnGrid, TrashCanOnGrid, ObstacleOnGrid, TrashItem, CharacterId, CommandAction, TrashType } from '../../../types';
 
 import tongOrganik from '../../../../assets/Wadah Sampah Hijau.webp';
@@ -169,7 +169,17 @@ interface GridMapProps {
   onShowHints?: () => void;
   customOffsets?: Partial<typeof DEFAULT_ELEMENT_OFFSETS>;
   levelId?: number;
+  isMuted?: boolean;
+  onToggleMute?: () => void;
+  onBackToDashboard?: () => void;
 }
+
+const TRASH_CAN_INFO: Record<TrashType, { label: string; name: string; color: string }> = {
+  ORGANIC: { label: 'Tong Hijau', name: 'Organik', color: '#16A34A' },
+  RECYCLABLE: { label: 'Tong Kuning', name: 'Daur Ulang', color: '#CA8A04' },
+  B3: { label: 'Tong Merah', name: 'B3', color: '#DC2626' },
+  RESIDUE: { label: 'Tong Abu-abu', name: 'Residu', color: '#4B5563' },
+};
 
 const CHARACTER_COLORS: Record<CharacterId, { bg: string; border: string; eye: string; label: string }> = {
   ORGANIC: {
@@ -312,6 +322,9 @@ export default function GridMap({
   onShowHints,
   customOffsets,
   levelId = 1,
+  isMuted = false,
+  onToggleMute,
+  onBackToDashboard,
 }: GridMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -325,6 +338,9 @@ export default function GridMap({
 
   // Backpack overlay visibility state
   const [showBackpack, setShowBackpack] = useState(true);
+
+  // State to toggle "Keterangan Urutan Buang Sampah" info card
+  const [showUrutanInfo, setShowUrutanInfo] = useState(false);
 
   // Custom vertical offset & size scale adjustments
   const [offsets] = useState({
@@ -1069,77 +1085,241 @@ export default function GridMap({
           className="block w-full bg-[#6DCC7E] h-full"
         />
 
-        {/* Level Badge — Pojok Kiri */}
-        <div
-          id="level-badge"
-          className="absolute top-3 left-3 z-10 h-8 sm:h-10 md:h-11 flex items-center justify-center bg-[#0192D5] border border-[#017bb3] rounded-lg sm:rounded-xl px-3 sm:px-4 text-white font-extrabold text-xs sm:text-sm md:text-base lg:text-lg font-sans tracking-wide shadow-sm select-none"
-        >
-          Level {levelId}
-        </div>
-
-        {/* Controls Container (Backpack Overlay + Help + Zoom) */}
-        <div className="absolute top-3 right-3 z-10 flex flex-row gap-1.5 sm:gap-2 items-start">
-          {/* Multi-character Backpack overlay — Disamping kiri tombol Tampilkan Detail Misi & Petunjuk, ukuran h-8 */}
-          {showBackpack && (
-            <div
-              id="backpack-overlay"
-              className="h-8 sm:h-10 md:h-11 flex items-center gap-1.5 sm:gap-2 bg-white/95 backdrop-blur-md border border-[#EED4B7] rounded-lg sm:rounded-xl px-2 sm:px-3 shadow-sm select-none flex-shrink-0"
-            >
-              {characters.map(c => {
-                const colors = CHARACTER_COLORS[c.id];
-                return (
-                  <div key={c.id} className="flex items-center gap-1 sm:gap-1.5">
-                    <Backpack className="w-4 h-4 sm:w-5 sm:h-5 md:w-5.5 md:h-5.5 text-indigo-600" />
-                    <div className="flex items-center gap-0.5 sm:gap-1">
-                      {Array.from({ length: c.backpackCapacity }, (_, i) => {
-                        const item = c.backpack[i];
-                        return item ? (
-                          item.image ? (
-                            <img
-                              key={item.id}
-                              src={item.image}
-                              alt={item.name}
-                              className="w-4 h-4 sm:w-5 sm:h-5 md:w-5.5 md:h-5.5 object-contain drop-shadow-xs"
-                            />
-                          ) : (
-                            <span key={item.id} className="text-xs sm:text-base leading-none">{item.emoji}</span>
-                          )
-                        ) : (
-                          <span
-                            key={`empty-${c.id}-${i}`}
-                            className="w-3.5 h-3.5 sm:w-4.5 sm:h-4.5 md:w-5 md:h-5 rounded-xs border border-dashed border-[#EED4B7] bg-[#FEF8F0]"
-                          />
-                        );
-                      })}
-                    </div>
-                    <span
-                      className={`text-[10px] sm:text-xs md:text-sm font-mono font-black ${c.backpack.length === 0 ? 'text-stone-400' : ''}`}
-                      style={{ color: c.backpack.length > 0 ? colors.border : undefined }}
-                    >
-                      {c.backpack.length}/{c.backpackCapacity}
-                    </span>
-                  </div>
-                );
-              })}
-              {characters.length > 1 && totalBackpack > 0 && (
-                <div className="text-[10px] sm:text-xs md:text-sm text-stone-600 font-mono font-black border-l border-[#EED4B7] pl-1.5">
-                  {totalBackpack}/{totalCapacity}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Guide / Hints Button (Only visible if callback exists) */}
-          {onShowHints && (
+        {/* Level Badge & Back to Dashboard Button — Pojok Kiri */}
+        <div className="absolute top-3 left-3 z-10 flex items-center gap-1.5 sm:gap-2">
+          {onBackToDashboard && (
             <button
               type="button"
-              onClick={onShowHints}
-              className="w-8 h-8 sm:w-10 sm:h-10 md:w-11 md:h-11 flex items-center justify-center bg-white/90 hover:bg-white border border-[#EED4B7] rounded-lg sm:rounded-xl text-amber-955 hover:text-indigo-600 shadow-sm cursor-pointer transition-colors active:scale-95 flex-shrink-0"
-              title="Tampilkan Detail Misi & Petunjuk"
+              onClick={onBackToDashboard}
+              className="h-8 sm:h-10 md:h-11 px-2.5 sm:px-3 flex items-center gap-1 bg-white/95 hover:bg-white border border-[#EED4B7] rounded-lg sm:rounded-xl text-stone-700 hover:text-amber-800 font-bold text-xs sm:text-sm shadow-sm cursor-pointer transition-colors active:scale-95 select-none"
+              title="Kembali ke Pilih Level"
             >
-              <HelpCircle className="w-4.5 h-4.5 sm:w-5.5 sm:h-5.5 md:w-6 md:h-6" />
+              <ArrowLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-stone-600" />
+              <span className="hidden sm:inline">Pilih Level</span>
             </button>
           )}
+          <div
+            id="level-badge"
+            className="h-8 sm:h-10 md:h-11 flex items-center justify-center bg-[#0192D5] border border-[#017bb3] rounded-lg sm:rounded-xl px-3 sm:px-4 text-white font-extrabold text-xs sm:text-sm md:text-base lg:text-lg font-sans tracking-wide shadow-sm select-none"
+          >
+            Level {levelId}
+          </div>
+        </div>
+
+        {/* Controls Container (Backpack Overlay + Info Urutan + Audio + Help + Zoom) */}
+        <div className="absolute top-3 right-3 z-10 flex flex-row gap-1.5 sm:gap-2 items-start">
+          <div className="relative flex flex-col items-end gap-1.5">
+            <div className="flex flex-row gap-1.5 sm:gap-2 items-center">
+              {/* Multi-character Backpack overlay */}
+              {showBackpack && (
+                <div
+                  id="backpack-overlay"
+                  className="h-8 sm:h-10 md:h-11 flex items-center gap-1.5 sm:gap-2 bg-white/95 backdrop-blur-md border border-[#EED4B7] rounded-lg sm:rounded-xl px-2 sm:px-3 shadow-sm select-none flex-shrink-0"
+                >
+                  {characters.map(c => {
+                    const colors = CHARACTER_COLORS[c.id];
+                    return (
+                      <div key={c.id} className="flex items-center gap-1 sm:gap-1.5">
+                        <Backpack className="w-4 h-4 sm:w-5 sm:h-5 md:w-5.5 md:h-5.5 text-indigo-600" />
+                        <div className="flex items-center gap-0.5 sm:gap-1">
+                          {Array.from({ length: c.backpackCapacity }, (_, i) => {
+                            const item = c.backpack[i];
+                            const isTop = i === c.backpack.length - 1;
+                            const discardNum = c.backpack.length - i;
+                            return item ? (
+                              <div
+                                key={item.id}
+                                className={`relative flex items-center justify-center rounded p-0.5 transition-all ${
+                                  isTop ? 'bg-amber-100 ring-2 ring-amber-500' : 'bg-stone-50'
+                                }`}
+                                title={`${item.name} (${TRASH_CAN_INFO[item.type]?.label || item.type}) - Urutan Buang #${discardNum}`}
+                              >
+                                {item.image ? (
+                                  <img
+                                    src={item.image}
+                                    alt={item.name}
+                                    className="w-4 h-4 sm:w-5 sm:h-5 md:w-5.5 md:h-5.5 object-contain drop-shadow-xs"
+                                  />
+                                ) : (
+                                  <span className="text-xs sm:text-base leading-none">{item.emoji}</span>
+                                )}
+                                <span className="absolute -top-1 -right-1 bg-amber-600 text-white font-extrabold text-[8px] w-3 h-3 sm:w-3.5 sm:h-3.5 rounded-full flex items-center justify-center shadow-xs">
+                                  {discardNum}
+                                </span>
+                              </div>
+                            ) : (
+                              <span
+                                key={`empty-${c.id}-${i}`}
+                                className="w-3.5 h-3.5 sm:w-4.5 sm:h-4.5 md:w-5 md:h-5 rounded-xs border border-dashed border-[#EED4B7] bg-[#FEF8F0]"
+                                title="Slot tas kosong"
+                              />
+                            );
+                          })}
+                        </div>
+                        <span
+                          className={`text-[10px] sm:text-xs md:text-sm font-mono font-black ${c.backpack.length === 0 ? 'text-stone-400' : ''}`}
+                          style={{ color: c.backpack.length > 0 ? colors.border : undefined }}
+                        >
+                          {c.backpack.length}/{c.backpackCapacity}
+                        </span>
+                      </div>
+                    );
+                  })}
+                  {characters.length > 1 && totalBackpack > 0 && (
+                    <div className="text-[10px] sm:text-xs md:text-sm text-stone-600 font-mono font-black border-l border-[#EED4B7] pl-1.5">
+                      {totalBackpack}/{totalCapacity}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Tombol Keterangan Urutan Buang Sampah */}
+              <button
+                type="button"
+                onClick={() => setShowUrutanInfo(prev => !prev)}
+                className={`h-8 sm:h-10 md:h-11 px-2 sm:px-2.5 flex items-center gap-1 sm:gap-1.5 bg-white/95 backdrop-blur-md border rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-extrabold shadow-sm cursor-pointer transition-all active:scale-95 flex-shrink-0 ${
+                  showUrutanInfo
+                    ? 'bg-amber-100 border-amber-400 text-amber-950 ring-1 ring-amber-400'
+                    : 'border-[#EED4B7] text-stone-700 hover:text-amber-800 hover:bg-white'
+                }`}
+                title="Keterangan Urutan Buang Sampah (LIFO)"
+              >
+                <Info className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-600" />
+                <span className="hidden sm:inline">Urutan Buang</span>
+              </button>
+
+              {/* In-Game Audio Toggle Button */}
+              {onToggleMute && (
+                <button
+                  id="arena-audio-toggle"
+                  type="button"
+                  onClick={onToggleMute}
+                  className="w-8 h-8 sm:w-10 sm:h-10 md:w-11 md:h-11 flex items-center justify-center bg-white/90 hover:bg-white border border-[#EED4B7] rounded-lg sm:rounded-xl shadow-sm cursor-pointer transition-colors active:scale-95 flex-shrink-0"
+                  title={isMuted ? 'Nyalakan Musik / Suara' : 'Matikan Musik / Suara'}
+                >
+                  {isMuted ? (
+                    <VolumeX className="w-4 h-4 sm:w-5 sm:h-5 md:w-5.5 md:h-5.5 text-rose-500" />
+                  ) : (
+                    <Volume2 className="w-4 h-4 sm:w-5 sm:h-5 md:w-5.5 md:h-5.5 text-indigo-650" />
+                  )}
+                </button>
+              )}
+
+              {/* Guide / Hints Button */}
+              {onShowHints && (
+                <button
+                  type="button"
+                  onClick={onShowHints}
+                  className="w-8 h-8 sm:w-10 sm:h-10 md:w-11 md:h-11 flex items-center justify-center bg-white/90 hover:bg-white border border-[#EED4B7] rounded-lg sm:rounded-xl text-amber-955 hover:text-indigo-600 shadow-sm cursor-pointer transition-colors active:scale-95 flex-shrink-0"
+                  title="Tampilkan Detail Misi & Petunjuk"
+                >
+                  <HelpCircle className="w-4.5 h-4.5 sm:w-5.5 sm:h-5.5 md:w-6 md:h-6" />
+                </button>
+              )}
+            </div>
+
+            {/* Dropdown Card Keterangan Urutan Buang */}
+            {showUrutanInfo && (
+              <div
+                id="keterangan-urutan-buang"
+                className="w-72 sm:w-84 md:w-96 bg-white/95 backdrop-blur-md border-2 border-amber-300 rounded-xl sm:rounded-2xl p-2.5 sm:p-3 shadow-xl flex flex-col gap-2 text-stone-800 animate-fade-in select-none text-left"
+              >
+                <div className="flex items-center justify-between pb-1.5 border-b border-amber-200">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-base">🎒</span>
+                    <span className="font-extrabold text-xs sm:text-sm text-amber-950 font-heading">
+                      Keterangan Urutan Buang Sampah
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowUrutanInfo(false)}
+                    className="w-5 h-5 flex items-center justify-center rounded-full hover:bg-stone-100 text-stone-400 hover:text-stone-700 transition-colors cursor-pointer"
+                    title="Tutup"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+
+                <div className="text-[10px] sm:text-xs leading-relaxed text-stone-700 bg-amber-50/80 p-2 rounded-lg border border-amber-200/80">
+                  <div className="font-bold text-amber-900 mb-0.5">📌 Aturan Tumpukan (LIFO / Stack):</div>
+                  Sampah yang <strong>terakhir diambil</strong> berada di bagian <strong>teratas tas</strong> dan <strong>wajib dibuang lebih dulu</strong> saat perintah <strong>BUANG</strong> dijalankan.
+                </div>
+
+                {/* Dynamic Backpack Sequence */}
+                {characters[0]?.backpack.length > 0 ? (
+                  <div className="flex flex-col gap-1.5">
+                    <div className="text-[10px] sm:text-xs font-bold text-stone-600 flex items-center justify-between">
+                      <span>Urutan Pembuangan Isi Tas:</span>
+                      <span className="text-[9px] text-stone-400">({characters[0].backpack.length} sampah di tas)</span>
+                    </div>
+                    <div className="flex flex-col gap-1 max-h-36 overflow-y-auto pr-0.5 custom-scrollbar">
+                      {characters[0].backpack
+                        .slice()
+                        .reverse()
+                        .map((item, idx) => {
+                          const bin = TRASH_CAN_INFO[item.type];
+                          const isNext = idx === 0;
+                          return (
+                            <div
+                              key={`${item.id}-${idx}`}
+                              className={`flex items-center justify-between px-2 py-1 rounded-lg border text-[10px] sm:text-xs ${
+                                isNext
+                                  ? 'bg-amber-100/90 border-amber-400 font-extrabold text-amber-950 ring-1 ring-amber-400 shadow-xs'
+                                  : 'bg-stone-50 border-stone-200 text-stone-600 font-medium'
+                              }`}
+                            >
+                              <div className="flex items-center gap-1.5">
+                                <span className="font-mono text-stone-500 font-bold">#{idx + 1}</span>
+                                {item.image ? (
+                                  <img src={item.image} alt={item.name} className="w-4 h-4 object-contain" />
+                                ) : (
+                                  <span>{item.emoji}</span>
+                                )}
+                                <span>{item.name}</span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <span className="text-stone-400">➔</span>
+                                <span
+                                  className="px-1.5 py-0.5 rounded text-[9px] font-bold text-white shadow-xs"
+                                  style={{ backgroundColor: bin?.color || '#666' }}
+                                >
+                                  {bin?.label || item.type}
+                                </span>
+                                {isNext && (
+                                  <span className="ml-1 text-[8px] bg-red-600 text-white font-black px-1.5 py-0.5 rounded uppercase tracking-wider animate-pulse">
+                                    Dibuang #1
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-1 text-[10px] sm:text-xs">
+                    <div className="text-stone-500 font-semibold">Petunjuk Level {levelId}:</div>
+                    {levelId === 1 && (
+                      <div className="bg-emerald-50 border border-emerald-200 p-2 rounded-lg text-emerald-900 leading-snug">
+                        Ambil <strong>Apel</strong> (x=3) lalu <strong>Kaleng</strong> (x=7). Kaleng terakhir diambil, sehingga dibuang ke <strong>Tong Kuning</strong> (x=14) lebih dulu, baru Apel ke <strong>Tong Hijau</strong> (x=13).
+                      </div>
+                    )}
+                    {levelId === 2 && (
+                      <div className="bg-amber-50 border border-amber-200 p-2 rounded-lg text-amber-950 leading-snug">
+                        Ambil <strong>Apel</strong> (x=3), <strong>Kaleng</strong> (x=7), lalu <strong>Baterai</strong> (x=10). Urutan buang: <strong>Baterai</strong> (Tong Merah x=15) ➔ <strong>Kaleng</strong> (Tong Kuning x=14) ➔ <strong>Apel</strong> (Tong Hijau x=13).
+                      </div>
+                    )}
+                    {levelId === 3 && (
+                      <div className="bg-rose-50 border border-rose-200 p-2 rounded-lg text-rose-950 leading-snug">
+                        Kapasitas tas muat 4 sampah. Ambil Apel, Kaleng, Sayur, Baterai. Urutan buang: <strong>Baterai</strong> (Merah x=15) ➔ <strong>Sayur</strong> (Hijau x=13) ➔ <strong>Kaleng</strong> (Kuning x=14) ➔ <strong>Apel</strong> (Hijau x=13).
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
 
           {/* Zoom controls */}
           <div className="flex flex-col gap-1">
