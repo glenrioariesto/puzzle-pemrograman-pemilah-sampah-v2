@@ -38,7 +38,7 @@ const levelGradients = (id: number) => {
     badgeBg: 'bg-emerald-100 text-emerald-800 border border-emerald-200',
     statsBg: 'bg-emerald-100/60 text-emerald-900 border border-emerald-300/50',
     accentText: 'text-[#0f5a31]',
-    hoverTitle: 'group-hover:text-[#0f5a31]',
+    hoverTitle: 'group-hover:text-black',
   };
   if (id === 2) return {
     bg: 'from-amber-400 to-orange-500',
@@ -49,7 +49,7 @@ const levelGradients = (id: number) => {
     badgeBg: 'bg-amber-100 text-amber-800 border border-amber-200',
     statsBg: 'bg-amber-100/60 text-amber-900 border border-amber-300/50',
     accentText: 'text-[#b45309]',
-    hoverTitle: 'group-hover:text-[#b45309]',
+    hoverTitle: 'group-hover:text-black',
   };
   return {
     bg: 'from-rose-400 to-pink-500',
@@ -60,7 +60,7 @@ const levelGradients = (id: number) => {
     badgeBg: 'bg-rose-100 text-rose-800 border border-rose-200',
     statsBg: 'bg-rose-100/60 text-rose-900 border border-rose-300/50',
     accentText: 'text-[#be123c]',
-    hoverTitle: 'group-hover:text-[#be123c]',
+    hoverTitle: 'group-hover:text-black',
   };
 };
 
@@ -116,7 +116,7 @@ export default function Dashboard({
         
         {/* Header Title */}
         <header className="w-fit lg:max-w-none mx-auto flex flex-col items-center text-center shrink-0 bg-white/80 backdrop-blur-md border-[3px] border-[#0f5a31] rounded-2xl shadow-md py-1.5 px-6 mb-3 lg:bg-transparent lg:backdrop-blur-none lg:border-0 lg:shadow-none lg:p-0 lg:mb-4">
-          <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-black font-display tracking-wide text-slate-900 leading-tight drop-shadow-sm select-none">
+          <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-black font-display tracking-wide text-black leading-tight drop-shadow-sm select-none">
             Pilih Level
           </h1>
         </header>
@@ -153,7 +153,7 @@ export default function Dashboard({
 
                   {/* Level Title & Description */}
                   <div className="my-2 lg:my-4 shrink-0">
-                    <h3 className={`font-black text-slate-900 text-sm sm:text-base md:text-lg leading-tight font-display tracking-wide ${theme.hoverTitle} transition-colors`}>
+                    <h3 className={`font-black text-black text-sm sm:text-base md:text-lg leading-tight font-display tracking-wide ${theme.hoverTitle} transition-colors`}>
                       {level.name.replace(/^\d+\.\s*/, '')}
                     </h3>
                   </div>
