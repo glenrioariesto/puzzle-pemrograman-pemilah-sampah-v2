@@ -87,12 +87,12 @@ export default function Dashboard({
         className="absolute inset-0 bg-cover bg-center opacity-60 backdrop-blur-md pointer-events-none"
         style={{ backgroundImage: `url(${bgBackground})` }}
       />
-      {/* Pusbuk Logo - Top Left */}
-      <div className="absolute top-2.5 left-2.5 sm:top-4 sm:left-4 md:top-6 md:left-6 z-30">
+      {/* Pusbuk Logo - Top Left (matching detektif digital) */}
+      <div className="absolute top-3 left-3 sm:top-4 sm:left-4 md:top-5 md:left-5 z-30 shrink-0">
         <img 
           src={logoPusbuk} 
           alt="Logo Pusbuk" 
-          className="h-7 sm:h-10 md:h-14 lg:h-16 w-auto object-contain transition-transform duration-300 hover:scale-105"
+          className="h-8 sm:h-11 md:h-14 lg:h-16 xl:h-20 w-auto object-contain drop-shadow-[0_6px_12px_rgba(56,69,91,0.45)] transition-transform duration-300 hover:scale-105"
         />
       </div>
 
