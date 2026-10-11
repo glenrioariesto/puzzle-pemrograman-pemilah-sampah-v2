@@ -1091,10 +1091,10 @@ export default function GridMap({
             <button
               type="button"
               onClick={onBackToDashboard}
-              className="h-8 sm:h-10 md:h-11 px-2.5 sm:px-3 flex items-center gap-1 bg-white/95 hover:bg-white border border-[#EED4B7] rounded-lg sm:rounded-xl text-stone-700 hover:text-amber-800 font-bold text-xs sm:text-sm shadow-sm cursor-pointer transition-colors active:scale-95 select-none"
+              className="h-8 sm:h-10 md:h-11 px-2.5 sm:px-3 flex items-center gap-1 bg-white/95 hover:bg-white border border-[#EED4B7] rounded-lg sm:rounded-xl text-slate-900 hover:text-black font-extrabold text-xs sm:text-sm shadow-sm cursor-pointer transition-colors active:scale-95 select-none"
               title="Kembali ke Pilih Level"
             >
-              <ArrowLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-stone-600" />
+              <ArrowLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-900" />
               <span className="hidden sm:inline">Pilih Level</span>
             </button>
           )}

@@ -116,7 +116,7 @@ export default function Dashboard({
         
         {/* Header Title */}
         <header className="w-fit lg:max-w-none mx-auto flex flex-col items-center text-center shrink-0 bg-white/80 backdrop-blur-md border-[3px] border-[#0f5a31] rounded-2xl shadow-md py-1.5 px-6 mb-3 lg:bg-transparent lg:backdrop-blur-none lg:border-0 lg:shadow-none lg:p-0 lg:mb-4">
-          <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-black font-display tracking-wide text-amber-950 leading-tight drop-shadow-sm select-none">
+          <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-black font-display tracking-wide text-slate-900 leading-tight drop-shadow-sm select-none">
             Pilih Level
           </h1>
         </header>
@@ -153,7 +153,7 @@ export default function Dashboard({
 
                   {/* Level Title & Description */}
                   <div className="my-2 lg:my-4 shrink-0">
-                    <h3 className={`font-black text-amber-955 text-sm sm:text-base md:text-lg leading-tight font-display tracking-wide ${theme.hoverTitle} transition-colors`}>
+                    <h3 className={`font-black text-slate-900 text-sm sm:text-base md:text-lg leading-tight font-display tracking-wide ${theme.hoverTitle} transition-colors`}>
                       {level.name.replace(/^\d+\.\s*/, '')}
                     </h3>
                   </div>
