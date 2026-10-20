@@ -433,7 +433,11 @@ export default function CommandPanel({
 
           <div 
             ref={containerRef}
-            className={`flex-1 overflow-y-auto flex flex-wrap ${isMobile ? "gap-0.5 p-0.5" : "gap-1 md:gap-y-2 p-1.5"} items-start content-start pr-0.5 sm:pr-1 custom-scrollbar min-h-0 mt-0.5 transition-all duration-200 ${draggedIndex !== null && isOutside ? "bg-rose-50/50 border border-dashed border-rose-350 rounded-2xl scale-[0.99] shadow-inner" : ""}`} id="instructions-dropzone-scrollable"
+            className={`flex-1 overflow-y-auto flex flex-wrap gap-y-1 md:gap-y-2 items-start content-start p-1.5 pr-0.5 sm:pr-1 custom-scrollbar min-h-0 mt-0.5 sm:mt-2 transition-all duration-200 ${
+              draggedIndex !== null && isOutside
+                ? 'bg-rose-50/50 border border-dashed border-rose-350 rounded-2xl scale-[0.99] shadow-inner' 
+                : ''
+            }`} id="instructions-dropzone-scrollable"
           >
             {instructions.length === 0 ? (
               <div className="h-full min-h-[60px] lg:min-h-[180px] [@media(max-height:740px)]:lg:min-h-[100px] flex flex-col items-center justify-center text-center p-1.5 lg:p-6 select-none w-full">
@@ -456,11 +460,14 @@ export default function CommandPanel({
                     }}
                     onPointerDown={(e) => handlePointerDown(e, index)}
                     onDragStart={(e) => e.preventDefault()}
-                    className={`relative z-0 flex items-center justify-between bg-transparent select-none touch-none cursor-grab active:cursor-grabbing hover:brightness-95 transition-all ${isMobile ? "w-[75px] mr-[-2px] mb-0.5" : "w-[92px] sm:w-[110px] mr-[-4px] mb-1.5"} ${isDragged ? "opacity-50" : "opacity-100"} ${isHoverTarget && !isDragged ? "ring-2 ring-indigo-500 rounded-xl scale-105 z-10 shadow-lg" : ""}`}
+                    className={`relative z-0 flex items-center justify-between bg-transparent select-none touch-none cursor-grab active:cursor-grabbing hover:brightness-95 transition-all w-[92px] sm:w-[110px] flex-shrink-0 mr-[-4px] mb-1.5 ${
+                      isDragged ? 'opacity-50' : 'opacity-100'
+                    } ${
+                      isHoverTarget && !isDragged ? 'ring-2 ring-indigo-500 rounded-xl scale-105 z-10 shadow-lg' : ''
+                    }`}
                     style={getDragItemStyle(index)}
                   >
                     <InstructionBlock
-                      isMobile={isMobile}
                       instruction={inst}
                       activeInstructionId={activeInstructionId}
                       isDragged={isDragged}
