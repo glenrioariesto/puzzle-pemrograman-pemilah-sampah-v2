@@ -6,11 +6,11 @@
 import { GameLevel, TrashItem, Character } from './types';
 
 // Import trash item SVG assets
-import svgApel from '../assets/apel.svg';
+import svgApel from '../assets/apel.webp';
 import svgBaterai from '../assets/baterai.svg';
 import svgBotolAir from '../assets/botol-air.svg';
 import svgKalengBesi from '../assets/kaleng-besi.svg';
-import svgKalengMinuman from '../assets/kaleng-minuman.svg';
+import svgKalengMinuman from '../assets/kaleng-minuman.webp';
 import svgKertasKoran from '../assets/kertas-koran.svg';
 import svgKulitPisang from '../assets/kulit-pisang.svg';
 import svgLampu from '../assets/lampu.svg';

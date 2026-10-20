@@ -14,6 +14,7 @@ import Toast from './components/Toast';
 
 // Import custom hook
 import { useArenaGame } from './hooks/useArenaGame';
+import { useIsMobile } from './hooks/useIsMobile';
 
 import LevelSuccessModal from './components/modals/LevelSuccessModal';
 import LevelFailModal from './components/modals/LevelFailModal';
@@ -87,6 +88,8 @@ export default function Arena({
     handleReset,
     playSound
   } = useArenaGame(level, isMuted, onSaveHighScore);
+
+  const isMobile = useIsMobile();
 
   const [activeHintSlide, setActiveHintSlide] = React.useState(0);
   const [toastMessage, setToastMessage] = React.useState<string | null>(null);
@@ -187,19 +190,10 @@ export default function Arena({
         <Toast message={toastMessage} onClose={() => setToastMessage(null)} />
       )}
 
-      {/* Floating Developer Auto-Solve Button */}
-      <button
-        onClick={handleDevAutoSolve}
-        className="fixed bottom-3 left-3 z-50 px-3 py-2 bg-indigo-650 hover:bg-indigo-600 border border-indigo-700 text-white text-[11px] font-bold rounded-xl shadow-md cursor-pointer transition-all flex items-center gap-1.5 active:scale-95 hover:scale-[1.02] opacity-40 hover:opacity-100"
-        title="Auto-fill correct steps for this level"
-      >
-        🛠️ Dev Auto-Solve
-      </button>
-
       {/* Main Core Layout Body */}
-      <main className="flex-1 max-w-7xl w-full mx-auto p-2 flex flex-col gap-2 min-h-0">
+      <main className="flex-1 max-w-7xl w-full mx-auto p-1 sm:p-2 flex flex-col gap-1 sm:gap-2 min-h-0">
         {/* Top workspace: Canvas map */}
-        <div className="h-[46%] flex flex-col min-h-0" id="top-workspace">
+        <div className={`${isMobile ? "h-[45%]" : "h-[58%]"} flex flex-col min-h-0 relative z-30 overflow-visible`} id="top-workspace">
           <GridMap
             levelId={level.id}
             width={level.gridSize.width}
@@ -217,8 +211,9 @@ export default function Arena({
         </div>
 
         {/* Bottom workspace: Command builder */}
-        <div className="h-[54%] flex flex-col min-h-0" id="bottom-workspace">
+        <div className="flex-1 flex flex-col min-h-0" id="bottom-workspace">
           <CommandPanel
+            isMobile={isMobile}
             level={level}
             activeCharacter={activeCharacter}
             instructions={characterStates[activeCharacter]?.instructions || []}

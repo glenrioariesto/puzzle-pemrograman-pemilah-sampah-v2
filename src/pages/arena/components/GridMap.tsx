@@ -16,6 +16,11 @@ import tongOrganik from '../../../../assets/Wadah Sampah Hijau.webp';
 import tongAnorganik from '../../../../assets/Wadah Sampah Kuning.webp';
 import tongB3 from '../../../../assets/Wadah Sampah Merah.webp';
 
+// Hover WebP assets for trash cans
+import canOrganikHover from '../../../../assets/organic-hover.webp?v=4';
+import canAnorganikHover from '../../../../assets/anorganik-hover.webp?v=4';
+import canB3Hover from '../../../../assets/b3-hover.webp?v=4';
+
 // WebM assets for trash can buang (DROP) animation
 import canOrganikWebm from '../../../../assets/wadah_sampah_hijau.webm';
 import canAnorganikWebm from '../../../../assets/wadah_sampah_kuning.webm';
@@ -27,11 +32,11 @@ import charOrganikBuangWebm from '../../../../assets/char_organik_buang.webm';
 import charOrganikBuangMp4 from '../../../../assets/char_organik_buang.mp4';
 
 // Import trash item SVG assets
-import svgApel from '../../../../assets/apel.svg';
+import webpApel from '../../../../assets/apel.webp';
 import svgBaterai from '../../../../assets/baterai.svg';
 import svgBotolAir from '../../../../assets/botol-air.svg';
 import svgKalengBesi from '../../../../assets/kaleng-besi.svg';
-import svgKalengMinuman from '../../../../assets/kaleng-minuman.svg';
+import webpKalengMinuman from '../../../../assets/kaleng-minuman.webp';
 import svgKertasKoran from '../../../../assets/kertas-koran.svg';
 import svgKulitPisang from '../../../../assets/kulit-pisang.svg';
 import svgLampu from '../../../../assets/lampu.svg';
@@ -89,38 +94,38 @@ export const DEFAULT_ELEMENT_CONFIGS: {
   rockTiles: Record<string, Partial<ElementSetting>>;
 } = {
   defaultCategory: {
-    character: { yOffset: 0.25, sizeScale: 1.0, sizeScaleW: 1.15, sizeScaleH: 2.30 },
-    trash:     { yOffset: 0.80, sizeScale: 0.45 },
-    trashCan:  { yOffset: 0.50, sizeScale: 0.85 },
+    character: { yOffset: 0.36, sizeScale: 1.0, sizeScaleW: 1.50, sizeScaleH: 3.00 },
+    trash:     { yOffset: 0.67, sizeScale: 0.70 },
+    trashCan:  { yOffset: 0.43, sizeScale: 1.08 },
     obstacle:  { yOffset: 0.50, xOffset: 0, sizeScale: 1.20 },
   },
 
   // Specific settings per character ID
   characters: {
-    ORGANIC:    { yOffset: 0.25, sizeScaleW: 1.15, sizeScaleH: 2.30 },
-    RECYCLABLE: { yOffset: 0.25, sizeScaleW: 1.15, sizeScaleH: 2.30 },
-    B3:         { yOffset: 0.25, sizeScaleW: 1.15, sizeScaleH: 2.30 },
+    ORGANIC:    { yOffset: 0.36, sizeScaleW: 1.50, sizeScaleH: 3.00 },
+    RECYCLABLE: { yOffset: 0.36, sizeScaleW: 1.50, sizeScaleH: 3.00 },
+    B3:         { yOffset: 0.36, sizeScaleW: 1.50, sizeScaleH: 3.00 },
   },
 
   // Specific settings per trash item ID
   trashItems: {
-    apple:     { yOffset: 0.80, sizeScale: 0.45 },
-    banana:    { yOffset: 0.80, sizeScale: 0.45 },
-    sayur:     { yOffset: 0.80, sizeScale: 0.45 },
-    can:       { yOffset: 0.80, sizeScale: 0.45 },
-    botolAir:  { yOffset: 0.80, sizeScale: 0.45 },
-    kertasKoran: { yOffset: 0.80, sizeScale: 0.45 },
-    battery:   { yOffset: 0.80, sizeScale: 0.45 },
-    kalengBesi: { yOffset: 0.80, sizeScale: 0.45 },
-    bulb:      { yOffset: 0.80, sizeScale: 0.45 },
+    apple:     { yOffset: 0.67, sizeScale: 0.70 },
+    banana:    { yOffset: 0.67, sizeScale: 0.70 },
+    sayur:     { yOffset: 0.67, sizeScale: 0.70 },
+    can:       { yOffset: 0.67, sizeScale: 0.70 },
+    botolAir:  { yOffset: 0.67, sizeScale: 0.70 },
+    kertasKoran: { yOffset: 0.67, sizeScale: 0.70 },
+    battery:   { yOffset: 0.67, sizeScale: 0.70 },
+    kalengBesi: { yOffset: 0.67, sizeScale: 0.70 },
+    bulb:      { yOffset: 0.67, sizeScale: 0.70 },
   },
 
   // Specific settings per trash can type
   trashCans: {
-    ORGANIC:    { yOffset: 0.50, sizeScale: 0.85 },
-    RECYCLABLE: { yOffset: 0.50, sizeScale: 0.85 },
-    B3:         { yOffset: 0.50, sizeScale: 0.85 },
-    RESIDUE:    { yOffset: 0.50, sizeScale: 0.85 },
+    ORGANIC:    { yOffset: 0.43, sizeScale: 1.08 },
+    RECYCLABLE: { yOffset: 0.43, sizeScale: 1.08 },
+    B3:         { yOffset: 0.43, sizeScale: 1.08 },
+    RESIDUE:    { yOffset: 0.43, sizeScale: 1.08 },
   },
 
   // Specific settings per obstacle type
@@ -173,6 +178,14 @@ interface GridMapProps {
   onToggleMute?: () => void;
   onBackToDashboard?: () => void;
 }
+
+// Hover tooltip image mapping
+const TRASH_CAN_HOVER_IMAGES: Record<TrashType, string> = {
+  ORGANIC: canOrganikHover,
+  RECYCLABLE: canAnorganikHover,
+  B3: canB3Hover,
+  RESIDUE: canAnorganikHover,
+};
 
 const TRASH_CAN_INFO: Record<TrashType, { label: string; name: string; color: string }> = {
   ORGANIC: { label: 'Tong Hijau', name: 'Organik', color: '#16A34A' },
@@ -342,6 +355,37 @@ export default function GridMap({
   // State to toggle "Keterangan Urutan Buang Sampah" info card
   const [showUrutanInfo, setShowUrutanInfo] = useState(false);
 
+  // Hover state for trash cans
+  const [hoveredCanType, setHoveredCanType] = useState<TrashType | null>(null);
+  const [hoveredCanPos, setHoveredCanPos] = useState<{ x: number; topY: number; bottomY: number } | null>(null);
+  const hoveredCanTypeRef = useRef<TrashType | null>(null);
+  hoveredCanTypeRef.current = hoveredCanType;
+
+  // Mobile viewport detection for responsive tooltip sizing and positioning
+  const [isMobile, setIsMobile] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return window.innerWidth < 768 || window.innerHeight < 520 || (('ontouchstart' in window || (navigator.maxTouchPoints && navigator.maxTouchPoints > 0)) && window.innerWidth < 1024);
+  });
+
+  useEffect(() => {
+    const handleResize = () => {
+      const mobile = window.innerWidth < 768 || window.innerHeight < 520 || (('ontouchstart' in window || (navigator.maxTouchPoints && navigator.maxTouchPoints > 0)) && window.innerWidth < 1024);
+      setIsMobile(mobile);
+    };
+    window.addEventListener('resize', handleResize);
+    window.addEventListener('orientationchange', handleResize);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('orientationchange', handleResize);
+    };
+  }, []);
+
+  // Clear hover on level change
+  useEffect(() => {
+    setHoveredCanType(null);
+    setHoveredCanPos(null);
+  }, [levelId]);
+
   // Custom vertical offset & size scale adjustments
   const [offsets] = useState({
     ...DEFAULT_ELEMENT_OFFSETS,
@@ -497,12 +541,15 @@ export default function GridMap({
       ORGANIC_can: tongOrganik,
       RECYCLABLE_can: tongAnorganik,
       B3_can: tongB3,
+      ORGANIC_can_hover: canOrganikHover,
+      RECYCLABLE_can_hover: canAnorganikHover,
+      B3_can_hover: canB3Hover,
 
       // Trash items (keyed by the exact item.id used in levels.ts TRASH_ITEMS)
       banana: svgKulitPisang,
       sayur: svgSayur,
-      apple: svgApel,
-      can: svgKalengMinuman,
+      apple: webpApel,
+      can: webpKalengMinuman,
       botolAir: svgBotolAir,
       kertasKoran: svgKertasKoran,
       battery: svgBaterai,
@@ -745,7 +792,7 @@ export default function GridMap({
       if (trashImg) {
         drawImageContain(ctx, trashImg, cx2, cy2, trashSize, trashSize);
       } else {
-        ctx.font = `${Math.min(trashSize * 0.8, 20)}px sans-serif`;
+        ctx.font = `${Math.min(trashSize * 0.8, 36)}px sans-serif`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText(t.item.emoji, cx2, cy2);
@@ -893,7 +940,7 @@ export default function GridMap({
         if (canImg) {
           drawImageContain(ctx, canImg, cx2, cy2, canSize, canSize);
         } else {
-          ctx.font = `${Math.min(canSize * 0.6, 28)}px sans-serif`;
+          ctx.font = `${Math.min(canSize * 0.6, 40)}px sans-serif`;
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
           ctx.fillText(tc.emoji, cx2, cy2);
@@ -1016,6 +1063,11 @@ export default function GridMap({
         x: offsetAtDragStart.current.x + dx,
         y: offsetAtDragStart.current.y + dy,
       });
+      if (hoveredCanTypeRef.current) {
+        setHoveredCanType(null);
+        setHoveredCanPos(null);
+      }
+      return;
     }
 
     const canvas = canvasRef.current;
@@ -1033,11 +1085,124 @@ export default function GridMap({
     const padX = (rect.width - gridW) / 2 + offset.x;
     const padY = (rect.height - gridH) / 2 + offset.y;
 
-    const gx = Math.floor((mx - padX) / cellSizeVal);
-    const gy = Math.floor((my - padY) / cellSizeVal);
+    // Hit-test trash cans with equal, non-overlapping trigger boundaries
+    let foundCan: TrashCanOnGrid | null = null;
+    let foundPos: { x: number; topY: number; bottomY: number } | null = null;
+    let minCandidateDist = Infinity;
 
+    for (const tc of trashCans) {
+      const cellLeft = padX + tc.pos.x * cellSizeVal;
+      const cellTop = padY + tc.pos.y * cellSizeVal;
+      const canConfig = DEFAULT_ELEMENT_CONFIGS.trashCans[tc.type] || {};
+      const yOffset = canConfig.yOffset ?? DEFAULT_ELEMENT_CONFIGS.defaultCategory.trashCan.yOffset;
+      const sizeScale = canConfig.sizeScale ?? DEFAULT_ELEMENT_CONFIGS.defaultCategory.trashCan.sizeScale;
+      const canSize = cellSizeVal * sizeScale;
+      const cx2 = cellLeft + cellSizeVal / 2;
+      const cy2 = cellTop + cellSizeVal * yOffset;
 
-  }, [width, height, offset, zoom, characters, trashItems, trashCans, obstacles, getCellSize]);
+      // Exactly 0.5 cells in each direction: equal hitboxes with no overlap between adjacent cans
+      const halfW = cellSizeVal * 0.5;
+      const halfH = canSize / 2;
+      const left = cx2 - halfW;
+      const right = cx2 + halfW;
+      const top = cy2 - halfH * 1.35;
+      const bottom = cy2 + halfH * 1.15;
+
+      if (mx >= left && mx <= right && my >= top && my <= bottom) {
+        const dist = Math.abs(mx - cx2);
+        if (dist < minCandidateDist) {
+          minCandidateDist = dist;
+          foundCan = tc;
+          foundPos = {
+            x: cx2,
+            topY: cy2 - halfH,
+            bottomY: cy2 + halfH,
+          };
+        }
+      }
+    }
+
+    if (foundCan && foundPos) {
+      if (hoveredCanTypeRef.current !== foundCan.type) {
+        setHoveredCanType(foundCan.type);
+      }
+      setHoveredCanPos(foundPos);
+    } else {
+      if (hoveredCanTypeRef.current !== null) {
+        setHoveredCanType(null);
+        setHoveredCanPos(null);
+      }
+    }
+  }, [width, height, offset, zoom, trashCans, getCellSize]);
+
+  // Touch tap handler for mobile devices
+  const handleTouchStart = useCallback((e: React.TouchEvent<HTMLDivElement>) => {
+    if (e.touches.length !== 1) return;
+    const touch = e.touches[0];
+    const container = containerRef.current;
+    if (!container) return;
+
+    const rect = container.getBoundingClientRect();
+    const mx = touch.clientX - rect.left;
+    const my = touch.clientY - rect.top;
+
+    const baseCellSize = getCellSize(rect.width, rect.height);
+    const cellSizeVal = baseCellSize * zoom;
+    const gridW = cellSizeVal * width;
+    const gridH = cellSizeVal * height;
+    const padX = (rect.width - gridW) / 2 + offset.x;
+    const padY = (rect.height - gridH) / 2 + offset.y;
+
+    let candidateCan: TrashCanOnGrid | null = null;
+    let candidatePos: { x: number; topY: number; bottomY: number } | null = null;
+    let minCandidateDist = Infinity;
+
+    for (const tc of trashCans) {
+      const cellLeft = padX + tc.pos.x * cellSizeVal;
+      const cellTop = padY + tc.pos.y * cellSizeVal;
+      const canConfig = DEFAULT_ELEMENT_CONFIGS.trashCans[tc.type] || {};
+      const yOffset = canConfig.yOffset ?? DEFAULT_ELEMENT_CONFIGS.defaultCategory.trashCan.yOffset;
+      const sizeScale = canConfig.sizeScale ?? DEFAULT_ELEMENT_CONFIGS.defaultCategory.trashCan.sizeScale;
+      const canSize = cellSizeVal * sizeScale;
+      const cx2 = cellLeft + cellSizeVal / 2;
+      const cy2 = cellTop + cellSizeVal * yOffset;
+
+      const halfW = cellSizeVal * 0.55;
+      const halfH = canSize / 2;
+      const left = cx2 - halfW;
+      const right = cx2 + halfW;
+      const top = cy2 - halfH * 1.35;
+      const bottom = cy2 + halfH * 1.15;
+
+      if (mx >= left && mx <= right && my >= top && my <= bottom) {
+        const dist = Math.abs(mx - cx2);
+        if (dist < minCandidateDist) {
+          minCandidateDist = dist;
+          candidateCan = tc;
+          candidatePos = {
+            x: cx2,
+            topY: cy2 - halfH,
+            bottomY: cy2 + halfH,
+          };
+        }
+      }
+    }
+
+    if (candidateCan && candidatePos) {
+      if (hoveredCanTypeRef.current === candidateCan.type) {
+        setHoveredCanType(null);
+        setHoveredCanPos(null);
+      } else {
+        setHoveredCanType(candidateCan.type);
+        setHoveredCanPos(candidatePos);
+      }
+    } else {
+      if (hoveredCanTypeRef.current !== null) {
+        setHoveredCanType(null);
+        setHoveredCanPos(null);
+      }
+    }
+  }, [width, height, offset, zoom, trashCans, getCellSize]);
 
   const handleMouseUp = useCallback(() => {
     isDragging.current = false;
@@ -1045,6 +1210,8 @@ export default function GridMap({
 
   const handleMouseLeave = useCallback(() => {
     isDragging.current = false;
+    setHoveredCanType(null);
+    setHoveredCanPos(null);
   }, []);
 
   function hexToRgba(hex: string, alpha: number): string {
@@ -1070,38 +1237,71 @@ export default function GridMap({
   const totalCapacity = characters.reduce((sum, c) => sum + c.backpackCapacity, 0);
 
   return (
-    <div className="flex flex-col bg-white border border-[#EED4B7] rounded-2xl sm:rounded-3xl p-0 shadow-xl h-full select-none" id="grid-map-container">
+    <div className="flex flex-col bg-white border border-[#EED4B7] rounded-2xl sm:rounded-3xl p-0 shadow-xl h-full select-none overflow-visible" id="grid-map-container">
       <div
         ref={containerRef}
-        className="flex-1 relative overflow-hidden rounded-2xl border border-[#EED4B7]/80"
-        style={{ minHeight: 120, cursor: isDragging.current ? 'grabbing' : 'default' }}
+        className="flex-1 relative rounded-2xl border border-[#EED4B7]/80 overflow-visible"
+        style={{ minHeight: 120, cursor: isDragging.current ? 'grabbing' : (hoveredCanType ? 'pointer' : 'default') }}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseLeave}
+        onTouchStart={handleTouchStart}
       >
         <canvas
           ref={canvasRef}
-          className="block w-full bg-[#6DCC7E] h-full"
+          className="block w-full bg-[#6DCC7E] h-full rounded-2xl"
         />
+
+        {/* Tooltip Hover Tong Sampah (Asset Image Card) */}
+        {hoveredCanType && hoveredCanPos && TRASH_CAN_HOVER_IMAGES[hoveredCanType] && (() => {
+          const hoverImg = TRASH_CAN_HOVER_IMAGES[hoveredCanType];
+          const containerW = containerSizeRef.current.width || 800;
+          
+          // Tooltip position centered horizontally on the trash can (allowed to exceed container)
+          const posX = hoveredCanPos.x;
+
+          // On mobile: position tooltip BELOW the trash can
+          // On desktop: position tooltip ABOVE the trash can
+          // Both are allowed to naturally exceed the container boundaries
+          const posY = isMobile 
+            ? hoveredCanPos.bottomY + 8 
+            : hoveredCanPos.topY - 8;
+          const transform = isMobile 
+            ? 'translateX(-50%)' 
+            : 'translate(-50%, -100%)';
+
+          const tooltipWidth = isMobile ? 80 : 176;
+
+          return (
+            <div
+              className="absolute pointer-events-none z-[60] transition-all duration-150 ease-out animate-fade-in max-w-none"
+              style={{
+                left: `${posX}px`,
+                top: `${posY}px`,
+                width: `${tooltipWidth}px`,
+                transform,
+              }}
+            >
+              <img
+                src={hoverImg}
+                alt={`Keterangan ${hoveredCanType}`}
+                className="w-full h-auto max-w-none object-contain drop-shadow-[0_12px_28px_rgba(0,0,0,0.35)] select-none pointer-events-none block"
+                style={{ aspectRatio: '302 / 442' }}
+              />
+            </div>
+          );
+        })()}
 
         {/* Level Badge & Back to Dashboard Button — Pojok Kiri */}
         <div className="absolute top-3 left-3 z-10 flex items-center gap-1.5 sm:gap-2">
           {onBackToDashboard && (
-            <button
-              type="button"
-              onClick={onBackToDashboard}
-              className="h-8 sm:h-10 md:h-11 px-2.5 sm:px-3 flex items-center gap-1 bg-white/95 hover:bg-white border border-[#EED4B7] rounded-lg sm:rounded-xl text-slate-900 hover:text-black font-extrabold text-xs sm:text-sm shadow-sm cursor-pointer transition-colors active:scale-95 select-none"
-              title="Kembali ke Pilih Level"
-            >
-              <ArrowLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-900" />
+            <button type="button" onClick={onBackToDashboard} className={`${isMobile ? "h-6.5 px-2 text-[10px] rounded-md" : "h-8 sm:h-10 md:h-11 px-2.5 sm:px-3 text-xs sm:text-sm rounded-lg sm:rounded-xl"} flex items-center gap-1 bg-white/95 hover:bg-white border border-[#EED4B7] text-slate-900 hover:text-black font-extrabold shadow-sm cursor-pointer transition-colors active:scale-95 select-none`} title="Kembali ke Pilih Level">
+              <ArrowLeft className={`${isMobile ? "w-3.5 h-3.5" : "w-3.5 h-3.5 sm:w-4 sm:h-4"} text-slate-900`} />
               <span className="hidden sm:inline">Pilih Level</span>
             </button>
           )}
-          <div
-            id="level-badge"
-            className="h-8 sm:h-10 md:h-11 flex items-center justify-center bg-[#0192D5] border border-[#017bb3] rounded-lg sm:rounded-xl px-3 sm:px-4 text-white font-extrabold text-xs sm:text-sm md:text-base lg:text-lg font-sans tracking-wide shadow-sm select-none"
-          >
+          <div id="level-badge" className={`${isMobile ? "h-6.5 px-2.5 text-xs rounded-md" : "h-8 sm:h-10 md:h-11 px-3 sm:px-4 text-xs sm:text-sm md:text-base lg:text-lg rounded-lg sm:rounded-xl"} flex items-center justify-center bg-[#0192D5] border border-[#017bb3] text-white font-extrabold font-sans tracking-wide shadow-sm select-none`}>
             Level {levelId}
           </div>
         </div>
@@ -1112,15 +1312,12 @@ export default function GridMap({
             <div className="flex flex-row gap-1.5 sm:gap-2 items-center">
               {/* Multi-character Backpack overlay */}
               {showBackpack && (
-                <div
-                  id="backpack-overlay"
-                  className="h-8 sm:h-10 md:h-11 flex items-center gap-1.5 sm:gap-2 bg-white/95 backdrop-blur-md border border-[#EED4B7] rounded-lg sm:rounded-xl px-2 sm:px-3 shadow-sm select-none flex-shrink-0"
-                >
+                <div id="backpack-overlay" className={`${isMobile ? "h-6.5 px-1.5 gap-1 rounded-md" : "h-8 sm:h-10 md:h-11 px-2 sm:px-3 gap-1.5 sm:gap-2 rounded-lg sm:rounded-xl"} flex items-center bg-white/95 backdrop-blur-md border border-[#EED4B7] shadow-sm select-none flex-shrink-0`}>
                   {characters.map(c => {
                     const colors = CHARACTER_COLORS[c.id];
                     return (
                       <div key={c.id} className="flex items-center gap-1 sm:gap-1.5">
-                        <Backpack className="w-4 h-4 sm:w-5 sm:h-5 md:w-5.5 md:h-5.5 text-indigo-600" />
+                        <Backpack className={`${isMobile ? "w-4 h-4" : "w-4 h-4 sm:w-5 sm:h-5 md:w-5.5 md:h-5.5"} text-indigo-600`} />
                         <div className="flex items-center gap-0.5 sm:gap-1">
                           {Array.from({ length: c.backpackCapacity }, (_, i) => {
                             const item = c.backpack[i];
@@ -1138,26 +1335,26 @@ export default function GridMap({
                                   <img
                                     src={item.image}
                                     alt={item.name}
-                                    className="w-4 h-4 sm:w-5 sm:h-5 md:w-5.5 md:h-5.5 object-contain drop-shadow-xs"
+                                    className={`${isMobile ? "w-4 h-4" : "w-4 h-4 sm:w-5 sm:h-5 md:w-5.5 md:h-5.5"} object-contain drop-shadow-xs`}
                                   />
                                 ) : (
                                   <span className="text-xs sm:text-base leading-none">{item.emoji}</span>
                                 )}
-                                <span className="absolute -top-1 -right-1 bg-amber-600 text-white font-extrabold text-[8px] w-3 h-3 sm:w-3.5 sm:h-3.5 rounded-full flex items-center justify-center shadow-xs">
+                                <span className={`absolute -top-1 -right-1 bg-amber-600 text-white font-extrabold ${isMobile ? "text-[6.5px] w-2.5 h-2.5" : "text-[8px] w-3 h-3 sm:w-3.5 sm:h-3.5"} rounded-full flex items-center justify-center shadow-xs`}>
                                   {discardNum}
                                 </span>
                               </div>
                             ) : (
                               <span
                                 key={`empty-${c.id}-${i}`}
-                                className="w-3.5 h-3.5 sm:w-4.5 sm:h-4.5 md:w-5 md:h-5 rounded-xs border border-dashed border-[#EED4B7] bg-[#FEF8F0]"
+                                className={`${isMobile ? "w-3.5 h-3.5" : "w-3.5 h-3.5 sm:w-4.5 sm:h-4.5 md:w-5 md:h-5"} rounded-xs border border-dashed border-[#EED4B7] bg-[#FEF8F0]`}
                                 title="Slot tas kosong"
                               />
                             );
                           })}
                         </div>
                         <span
-                          className={`text-[10px] sm:text-xs md:text-sm font-mono font-black ${c.backpack.length === 0 ? 'text-stone-400' : ''}`}
+                          className={`text-[9px] sm:text-xs md:text-sm font-mono font-black ${c.backpack.length === 0 ? 'text-stone-400' : ''}`}
                           style={{ color: c.backpack.length > 0 ? colors.border : undefined }}
                         >
                           {c.backpack.length}/{c.backpackCapacity}
@@ -1177,43 +1374,32 @@ export default function GridMap({
               <button
                 type="button"
                 onClick={() => setShowUrutanInfo(prev => !prev)}
-                className={`h-8 sm:h-10 md:h-11 px-2 sm:px-2.5 flex items-center gap-1 sm:gap-1.5 bg-white/95 backdrop-blur-md border rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-extrabold shadow-sm cursor-pointer transition-all active:scale-95 flex-shrink-0 ${
+                className={`${isMobile ? "h-8 px-2.5 text-[10px] sm:text-xs rounded-lg gap-1.5" : "h-10 px-3 text-xs sm:text-sm rounded-xl gap-1.5"} flex items-center backdrop-blur-md border font-extrabold shadow-sm cursor-pointer transition-all active:scale-95 flex-shrink-0 ${
                   showUrutanInfo
                     ? 'bg-amber-100 border-amber-400 text-amber-950 ring-1 ring-amber-400'
-                    : 'border-[#EED4B7] text-stone-700 hover:text-amber-800 hover:bg-white'
+                    : 'bg-white/95 hover:bg-white border-[#EED4B7] text-stone-700 hover:text-stone-900'
                 }`}
                 title="Keterangan Urutan Buang Sampah (LIFO)"
               >
-                <Info className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-600" />
+                <Info className={`${isMobile ? "w-3.5 h-3.5" : "w-3.5 h-3.5 sm:w-4 sm:h-4"} text-amber-600`} />
                 <span className="hidden sm:inline">Urutan Buang</span>
               </button>
 
               {/* In-Game Audio Toggle Button */}
               {onToggleMute && (
-                <button
-                  id="arena-audio-toggle"
-                  type="button"
-                  onClick={onToggleMute}
-                  className="w-8 h-8 sm:w-10 sm:h-10 md:w-11 md:h-11 flex items-center justify-center bg-white/90 hover:bg-white border border-[#EED4B7] rounded-lg sm:rounded-xl shadow-sm cursor-pointer transition-colors active:scale-95 flex-shrink-0"
-                  title={isMuted ? 'Nyalakan Musik / Suara' : 'Matikan Musik / Suara'}
-                >
+                <button id="arena-audio-toggle" type="button" onClick={onToggleMute} className={`${isMobile ? "w-6.5 h-6.5 rounded-md" : "w-8 h-8 sm:w-10 sm:h-10 md:w-11 md:h-11 rounded-lg sm:rounded-xl"} flex items-center justify-center bg-white/90 hover:bg-white border border-[#EED4B7] shadow-sm cursor-pointer transition-colors active:scale-95 flex-shrink-0`} title={isMuted ? "Nyalakan Musik / Suara" : "Matikan Musik / Suara"}>
                   {isMuted ? (
-                    <VolumeX className="w-4 h-4 sm:w-5 sm:h-5 md:w-5.5 md:h-5.5 text-rose-500" />
+                    <VolumeX className={`${isMobile ? "w-4 h-4" : "w-4 h-4 sm:w-5 sm:h-5 md:w-5.5 md:h-5.5"} text-rose-500`} />
                   ) : (
-                    <Volume2 className="w-4 h-4 sm:w-5 sm:h-5 md:w-5.5 md:h-5.5 text-indigo-650" />
+                    <Volume2 className={`${isMobile ? "w-4 h-4" : "w-4 h-4 sm:w-5 sm:h-5 md:w-5.5 md:h-5.5"} text-indigo-650`} />
                   )}
                 </button>
               )}
 
               {/* Guide / Hints Button */}
               {onShowHints && (
-                <button
-                  type="button"
-                  onClick={onShowHints}
-                  className="w-8 h-8 sm:w-10 sm:h-10 md:w-11 md:h-11 flex items-center justify-center bg-white/90 hover:bg-white border border-[#EED4B7] rounded-lg sm:rounded-xl text-amber-955 hover:text-indigo-600 shadow-sm cursor-pointer transition-colors active:scale-95 flex-shrink-0"
-                  title="Tampilkan Detail Misi & Petunjuk"
-                >
-                  <HelpCircle className="w-4.5 h-4.5 sm:w-5.5 sm:h-5.5 md:w-6 md:h-6" />
+                <button type="button" onClick={onShowHints} className={`${isMobile ? "w-6.5 h-6.5 rounded-md" : "w-8 h-8 sm:w-10 sm:h-10 md:w-11 md:h-11 rounded-lg sm:rounded-xl"} flex items-center justify-center bg-white/90 hover:bg-white border border-[#EED4B7] text-amber-955 hover:text-indigo-600 shadow-sm cursor-pointer transition-colors active:scale-95 flex-shrink-0`} title="Tampilkan Detail Misi & Petunjuk">
+                  <HelpCircle className={`${isMobile ? "w-4.5 h-4.5" : "w-4.5 h-4.5 sm:w-5.5 sm:h-5.5 md:w-6 md:h-6"}`} />
                 </button>
               )}
             </div>
@@ -1323,35 +1509,17 @@ export default function GridMap({
 
           {/* Zoom controls */}
           <div className="flex flex-col gap-1">
-            <button
-              type="button"
-              onClick={() => setZoom(prev => Math.min(3, prev * 1.2))}
-              className="w-8 h-8 sm:w-10 sm:h-10 md:w-11 md:h-11 flex items-center justify-center bg-white/90 hover:bg-white border border-[#EED4B7] rounded-lg sm:rounded-xl text-sm sm:text-lg md:text-xl font-bold text-stone-700 shadow-sm cursor-pointer transition-colors"
-            >
+            <button type="button" onClick={() => setZoom(prev => Math.min(3, prev * 1.2))} className={`${isMobile ? "w-6 h-6 text-xs rounded-md" : "w-8 h-8 sm:w-10 sm:h-10 md:w-11 md:h-11 text-sm sm:text-lg md:text-xl rounded-lg sm:rounded-xl"} flex items-center justify-center bg-white/90 hover:bg-white border border-[#EED4B7] font-bold text-stone-700 shadow-sm cursor-pointer transition-colors`}>
               +
             </button>
-            <button
-              type="button"
-              onClick={() => setZoom(prev => Math.max(0.3, prev / 1.2))}
-              className="w-8 h-8 sm:w-10 sm:h-10 md:w-11 md:h-11 flex items-center justify-center bg-white/90 hover:bg-white border border-[#EED4B7] rounded-lg sm:rounded-xl text-sm sm:text-lg md:text-xl font-bold text-stone-700 shadow-sm cursor-pointer transition-colors"
-            >
+            <button type="button" onClick={() => setZoom(prev => Math.max(0.3, prev / 1.2))} className={`${isMobile ? "w-6 h-6 text-xs rounded-md" : "w-8 h-8 sm:w-10 sm:h-10 md:w-11 md:h-11 text-sm sm:text-lg md:text-xl rounded-lg sm:rounded-xl"} flex items-center justify-center bg-white/90 hover:bg-white border border-[#EED4B7] font-bold text-stone-700 shadow-sm cursor-pointer transition-colors`}>
               −
             </button>
-            <button
-              type="button"
-              onClick={() => { setZoom(1); setOffset({ x: 0, y: 0 }); }}
-              className="w-8 h-8 sm:w-10 sm:h-10 md:w-11 md:h-11 flex items-center justify-center bg-white/90 hover:bg-white border border-[#EED4B7] rounded-lg sm:rounded-xl text-[10px] sm:text-sm md:text-base font-bold text-stone-500 shadow-sm cursor-pointer transition-colors"
-              title="Reset zoom"
-            >
+            <button type="button" onClick={() => { setZoom(1); setOffset({ x: 0, y: 0 }); }} className={`${isMobile ? "w-6 h-6 text-[8px] rounded-md" : "w-8 h-8 sm:w-10 sm:h-10 md:w-11 md:h-11 text-[10px] sm:text-sm md:text-base rounded-lg sm:rounded-xl"} flex items-center justify-center bg-white/90 hover:bg-white border border-[#EED4B7] font-bold text-stone-500 shadow-sm cursor-pointer transition-colors`} title="Reset zoom">
               ⟲
             </button>
-            <button
-              type="button"
-              onClick={() => setShowBackpack(prev => !prev)}
-              className="w-8 h-8 sm:w-10 sm:h-10 md:w-11 md:h-11 flex items-center justify-center bg-white/90 hover:bg-white border border-[#EED4B7] rounded-lg sm:rounded-xl shadow-sm cursor-pointer transition-colors"
-              title={showBackpack ? "Sembunyikan status tas" : "Tampilkan status tas"}
-            >
-              <Backpack className={`w-4 h-4 sm:w-5.5 sm:h-5.5 md:w-6 md:h-6 ${showBackpack ? 'text-indigo-650' : 'text-stone-400'}`} />
+            <button type="button" onClick={() => setShowBackpack(prev => !prev)} className={`${isMobile ? "w-6 h-6 rounded-md" : "w-8 h-8 sm:w-10 sm:h-10 md:w-11 md:h-11 rounded-lg sm:rounded-xl"} flex items-center justify-center bg-white/90 hover:bg-white border border-[#EED4B7] shadow-sm cursor-pointer transition-colors`} title={showBackpack ? "Sembunyikan status tas" : "Tampilkan status tas"}>
+              <Backpack className={`${isMobile ? "w-4 h-4" : "w-5 h-5"} ${showBackpack ? "text-indigo-650" : "text-stone-400"}`} />
             </button>
           </div>
         </div>

@@ -11,6 +11,7 @@ import { LEVELS } from './levels';
 import Splash from './pages/splash/Splash';
 import Dashboard from './pages/dashboard/Dashboard';
 import Arena from './pages/arena/Arena';
+import PortraitWarning from './components/PortraitWarning';
 
 import { playSfx, syncBgmState, initUserInteractionListener } from './utils/audio';
 
@@ -201,6 +202,9 @@ export default function App() {
           onToggleMute={handleToggleMute}
         />
       )}
+
+      {/* Orientation Guard: Memastikan perangkat harus landscape di semua halaman */}
+      <PortraitWarning />
 
       {/* Footer Copyright: Hanya tampil di halaman tanpa kontrol (Splash & Dashboard) */}
       {page !== 'arena' && (

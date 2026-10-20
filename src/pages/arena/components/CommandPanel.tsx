@@ -48,6 +48,7 @@ interface CommandPanelProps {
   // Total blocks
   totalBlockCount: number;
   characterBlocksCount: Record<CharacterId, number>;
+  isMobile?: boolean;
 }
 
 const CHARACTER_META: Record<CharacterId, { label: string; image: string; bgClass: string; activeBgClass: string; borderClass: string }> = {
@@ -90,6 +91,7 @@ export default function CommandPanel({
   onReset,
   totalBlockCount,
   characterBlocksCount,
+  isMobile = false,
 }: CommandPanelProps) {
 
   const blockCount = totalBlockCount;
@@ -301,15 +303,15 @@ export default function CommandPanel({
   ];
 
   return (
-    <div className="bg-[#FCDCB5]/70 border border-[#E9BE91] rounded-2xl sm:rounded-3xl p-3 shadow-xl flex flex-col h-full space-y-1.5 md:space-y-3 overflow-hidden" id="command-panel-card">
+    <div className={`bg-[#FCDCB5]/70 border border-[#E9BE91] ${isMobile ? "rounded-xl p-1 space-y-0.5" : "rounded-2xl sm:rounded-3xl p-3 space-y-1.5 md:space-y-3"} shadow-xl flex flex-col h-full overflow-hidden`} id="command-panel-card">
       {/* Main Grid: Left side spawned block panel, Right side active stack */}
       <div className="grid grid-cols-12 gap-1 sm:gap-2 flex-1 min-h-0" id="command-panel-inner-grid">
-        <div className="col-span-3 flex flex-col justify-start items-center overflow-y-auto px-1.5 pr-0.5 custom-scrollbar min-h-0 h-full" id="toolbox-container">
+        <div className={`col-span-3 flex flex-col justify-start items-center overflow-y-auto ${isMobile ? "px-0.5" : "px-1.5"} pr-0.5 custom-scrollbar min-h-0 h-full`} id="toolbox-container">
           <div className="flex flex-col gap-1.5 items-center w-full">
             {/* Grid layout for 3 movements (left) and 3 actions (right) */}
-            <div className="grid grid-cols-2 gap-1.5 sm:gap-2 w-full justify-items-center" id="toolbox-buttons-grid">
+            <div className={`grid grid-cols-2 ${isMobile ? "gap-1" : "gap-1.5 sm:gap-2"} w-full justify-items-center`} id="toolbox-buttons-grid">
               {/* Kolom Kiri: 3 Gerakan (Loncat, Kiri, Kanan) */}
-              <div className="flex flex-col gap-1 sm:gap-1.5 items-center w-full" id="movements-column">
+              <div className={`flex flex-col ${isMobile ? "gap-1" : "gap-1 sm:gap-1.5"} items-center w-full`} id="movements-column">
                 {movementItems.map((item) => (
                   <button
                     key={item.action}
@@ -321,13 +323,13 @@ export default function CommandPanel({
                     title={item.title}
                     id={`add-btn-${item.action}`}
                   >
-                    <img src={item.image} alt={item.title} className="w-full h-auto object-contain" />
+                    <img src={item.image} alt={item.title} className="w-full h-auto object-contain select-none pointer-events-none" />
                   </button>
                 ))}
               </div>
 
               {/* Kolom Kanan: 3 Aksi (Ambil, Buang, Reset) */}
-              <div className="flex flex-col gap-1 sm:gap-1.5 items-center w-full" id="actions-column">
+              <div className={`flex flex-col ${isMobile ? "gap-1" : "gap-1 sm:gap-1.5"} items-center w-full`} id="actions-column">
                 {actionItems.map((item) => (
                   <button
                     key={item.action}
@@ -339,7 +341,7 @@ export default function CommandPanel({
                     title={item.title}
                     id={`add-btn-${item.action}`}
                   >
-                    <img src={item.image} alt={item.title} className="w-full h-auto object-contain" />
+                    <img src={item.image} alt={item.title} className="w-full h-auto object-contain select-none pointer-events-none" />
                   </button>
                 ))}
 
@@ -354,13 +356,13 @@ export default function CommandPanel({
                   title="Reset Level & Hapus Semua Langkah"
                   id="add-btn-RESET"
                 >
-                  <img src={imgReset} alt="Reset" className="w-full h-auto object-contain" />
+                  <img src={imgReset} alt="Reset" className="w-full h-auto object-contain select-none pointer-events-none" />
                 </button>
               </div>
             </div>
 
             {/* Mulai / Hentikan Button placed BELOW the grid */}
-            <div className="w-full mt-1 sm:mt-1.5 flex justify-center items-center" id="mulai-hentikan-wrapper">
+            <div className={`w-full ${isMobile ? "mt-1" : "mt-1 sm:mt-1.5"} flex justify-center items-center`} id="mulai-hentikan-wrapper">
               {isExecuting ? (
                 <button
                   type="button"
@@ -369,11 +371,7 @@ export default function CommandPanel({
                   title="Hentikan Program"
                   id="stop-execution-btn"
                 >
-                  <img
-                    src={imgStopBaru}
-                    alt="Hentikan"
-                    className="w-full h-auto object-contain drop-shadow-sm select-none pointer-events-none"
-                  />
+                  <img src={imgStopBaru} alt="Hentikan" className="w-full h-auto object-contain drop-shadow-sm select-none pointer-events-none" />
                 </button>
               ) : (
                 <button
@@ -388,11 +386,7 @@ export default function CommandPanel({
                   title={instructions.length === 0 ? 'Susun instruksi terlebih dahulu' : 'Mulai Jalankan Program'}
                   id="run-execution-btn"
                 >
-                  <img
-                    src={imgMulaiBaru}
-                    alt="Mulai"
-                    className="w-full h-auto object-contain drop-shadow-sm select-none pointer-events-none"
-                  />
+                  <img src={imgMulaiBaru} alt="Mulai" className="w-full h-auto object-contain drop-shadow-sm select-none pointer-events-none" />
                 </button>
               )}
             </div>
@@ -400,7 +394,7 @@ export default function CommandPanel({
         </div>
 
         {/* Right side instruction stack column */}
-        <div className="col-span-9 flex flex-col bg-[#FEF8F0] rounded-xl sm:rounded-2xl border border-[#E9BE91]/70 p-1 md:p-2 relative shadow-inner" id="program-stack-container">
+        <div className={`col-span-9 flex flex-col bg-[#FEF8F0] ${isMobile ? "rounded-lg p-1" : "rounded-xl sm:rounded-2xl p-1 md:p-2"} border border-[#E9BE91]/70 relative shadow-inner h-full min-h-0`} id="program-stack-container">
           {/* Character Selector Tabs — above the program stack */}
           {(level.characters || []).length > 1 && (
             <div className="flex gap-1 sm:gap-2 mb-1.5 sm:mb-3" id="character-selector-tabs">
@@ -439,12 +433,7 @@ export default function CommandPanel({
 
           <div 
             ref={containerRef}
-            className={`flex-1 overflow-y-auto flex flex-wrap gap-y-1 md:gap-y-2 items-start content-start p-1.5 pr-0.5 sm:pr-1 custom-scrollbar min-h-0 max-h-[90px] md:max-h-[360px] mt-1 sm:mt-2 transition-all duration-200 ${
-              draggedIndex !== null && isOutside
-                ? 'bg-rose-50/50 border border-dashed border-rose-350 rounded-2xl scale-[0.99] shadow-inner' 
-                : ''
-            }`}
-            id="instructions-dropzone-scrollable"
+            className={`flex-1 overflow-y-auto flex flex-wrap ${isMobile ? "gap-0.5 p-0.5" : "gap-1 md:gap-y-2 p-1.5"} items-start content-start pr-0.5 sm:pr-1 custom-scrollbar min-h-0 mt-0.5 transition-all duration-200 ${draggedIndex !== null && isOutside ? "bg-rose-50/50 border border-dashed border-rose-350 rounded-2xl scale-[0.99] shadow-inner" : ""}`} id="instructions-dropzone-scrollable"
           >
             {instructions.length === 0 ? (
               <div className="h-full min-h-[60px] lg:min-h-[180px] [@media(max-height:740px)]:lg:min-h-[100px] flex flex-col items-center justify-center text-center p-1.5 lg:p-6 select-none w-full">
@@ -467,14 +456,11 @@ export default function CommandPanel({
                     }}
                     onPointerDown={(e) => handlePointerDown(e, index)}
                     onDragStart={(e) => e.preventDefault()}
-                    className={`relative z-0 flex items-center justify-between bg-transparent select-none touch-none cursor-grab active:cursor-grabbing hover:brightness-95 transition-all w-[92px] sm:w-[110px] flex-shrink-0 mr-[-4px] mb-1.5 ${
-                      isDragged ? 'opacity-50' : 'opacity-100'
-                    } ${
-                      isHoverTarget && !isDragged ? 'ring-2 ring-indigo-500 rounded-xl scale-105 z-10 shadow-lg' : ''
-                    }`}
+                    className={`relative z-0 flex items-center justify-between bg-transparent select-none touch-none cursor-grab active:cursor-grabbing hover:brightness-95 transition-all ${isMobile ? "w-[75px] mr-[-2px] mb-0.5" : "w-[92px] sm:w-[110px] mr-[-4px] mb-1.5"} ${isDragged ? "opacity-50" : "opacity-100"} ${isHoverTarget && !isDragged ? "ring-2 ring-indigo-500 rounded-xl scale-105 z-10 shadow-lg" : ""}`}
                     style={getDragItemStyle(index)}
                   >
                     <InstructionBlock
+                      isMobile={isMobile}
                       instruction={inst}
                       activeInstructionId={activeInstructionId}
                       isDragged={isDragged}
@@ -495,7 +481,7 @@ export default function CommandPanel({
           )}
 
           {/* Running blocks badge */}
-          <div className="mt-0.5 md:mt-4 pt-0.5 md:pt-3 border-t border-[#EED4B7] flex flex-col items-stretch gap-1 md:gap-2 w-full min-w-0">
+          <div className={`${isMobile ? "mt-0.5 pt-0.5" : "mt-0.5 md:mt-4 pt-0.5 md:pt-3"} border-t border-[#EED4B7] flex flex-col items-stretch gap-1 w-full min-w-0`}>
             {/* Blok badge */}
             <div className="flex flex-col sm:flex-col md:flex-row md:items-center gap-0 md:gap-1 bg-white border border-[#EED4B7] px-1.5 sm:px-2.5 py-0.5 rounded-md sm:rounded-lg shadow-sm w-full md:w-auto min-w-0">
               <span className="text-[7px] sm:text-[9px] text-amber-900/85 uppercase font-mono tracking-widest font-bold whitespace-nowrap">Total Blok</span>
