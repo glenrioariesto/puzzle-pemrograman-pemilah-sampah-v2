@@ -17,9 +17,9 @@ import tongAnorganik from '../../../../assets/Wadah Sampah Kuning.webp';
 import tongB3 from '../../../../assets/Wadah Sampah Merah.webp';
 
 // Hover WebP assets for trash cans
-import canOrganikHover from '../../../../assets/organic-hover.webp?v=4';
-import canAnorganikHover from '../../../../assets/anorganik-hover.webp?v=4';
-import canB3Hover from '../../../../assets/b3-hover.webp?v=4';
+import canOrganikHover from '../../../../assets/organic-hover.webp';
+import canAnorganikHover from '../../../../assets/anorganik-hover.webp';
+import canB3Hover from '../../../../assets/b3-hover.webp';
 
 // WebM assets for trash can buang (DROP) animation
 import canOrganikWebm from '../../../../assets/wadah_sampah_hijau.webm';

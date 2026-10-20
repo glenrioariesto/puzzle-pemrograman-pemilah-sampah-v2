@@ -5,22 +5,32 @@ declare module '*.webp' {
   export default content;
 }
 
-declare module '*.webp?v=3' {
+declare module '*?v=4' {
   const content: string;
   export default content;
 }
 
-declare module '*.webp?v2' {
+declare module '*?v=3' {
   const content: string;
   export default content;
 }
 
-declare module '@/assets/*.webp?v2' {
+declare module '*?v=2' {
   const content: string;
   export default content;
 }
 
-declare module '@/assets/logo-jenama.webp?v2' {
+declare module '*?v=1' {
+  const content: string;
+  export default content;
+}
+
+declare module '*?v2' {
+  const content: string;
+  export default content;
+}
+
+declare module '*?url' {
   const content: string;
   export default content;
 }
