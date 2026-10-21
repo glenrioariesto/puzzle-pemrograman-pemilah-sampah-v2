@@ -11,6 +11,7 @@ interface InstructionBlockProps {
   activeInstructionId?: string | null;
   isDragged?: boolean;
   isOutside?: boolean;
+  isMobile?: boolean;
 }
 
 export default function InstructionBlock({
@@ -18,6 +19,7 @@ export default function InstructionBlock({
   activeInstructionId,
   isDragged = false,
   isOutside = false,
+  isMobile = false,
 }: InstructionBlockProps) {
   const isExecutingCurrent = activeInstructionId === instruction.id;
 
@@ -89,7 +91,7 @@ export default function InstructionBlock({
   const renderIcon = (type: string) => {
     return (
       <svg
-        className="w-4 h-4 sm:w-6 sm:h-6 flex-shrink-0"
+        className={`${isMobile ? 'w-[15px] h-[15px]' : 'w-4 h-4 sm:w-6 sm:h-6'} flex-shrink-0`}
         viewBox="0 0 65.92 65.92"
       >
         {/* White Card Background rx="9.09" matching tombol-atas.svg */}
@@ -140,12 +142,18 @@ export default function InstructionBlock({
 
   return (
     <div
-      className="relative z-0 flex items-center justify-between py-0.5 pl-6 pr-6 sm:py-1 sm:pl-6 sm:pr-20 h-7 sm:h-11 w-full bg-transparent outline-none select-none"
+      className={`relative z-0 flex items-center justify-between w-full bg-transparent outline-none select-none ${
+        isMobile
+          ? 'py-0.5 pl-4 pr-3 h-7'
+          : 'py-0.5 pl-6 pr-6 sm:py-1 sm:pl-6 sm:pr-20 h-7 sm:h-11'
+      }`}
       id={`block-flat-${instruction.id}`}
     >
       {/* SVG Bubble Background (Horizontal Puzzle Shape) */}
       <svg
-        className="absolute inset-0 w-full h-full  min-w-[130px] -z-10 pointer-events-none select-none"
+        className={`absolute inset-0 w-full h-full ${
+          isMobile ? 'min-w-[88px]' : 'min-w-[130px]'
+        } -z-10 pointer-events-none select-none`}
         viewBox="0 0 120 36"
         preserveAspectRatio="none"
       >
@@ -163,9 +171,9 @@ export default function InstructionBlock({
         />
       </svg>
 
-      <div className={`flex items-center gap-1 sm:gap-2 z-10 ${colors.textColor}`}>
+      <div className={`flex items-center ${isMobile ? 'gap-1' : 'gap-1 sm:gap-2'} z-10 ${colors.textColor}`}>
         {renderIcon(instruction.type)}
-        <span className="font-extrabold text-[9px] sm:text-xs tracking-wider font-mono">
+        <span className={`font-extrabold ${isMobile ? 'text-[8.5px] tracking-tight' : 'text-[9px] sm:text-xs tracking-wider'} font-mono`}>
           {config.label}
         </span>
       </div>

@@ -572,7 +572,9 @@ export default function CommandPanel({
                     }}
                     onPointerDown={(e) => handlePointerDown(e, index)}
                     onDragStart={(e) => e.preventDefault()}
-                    className={`relative z-0 flex items-center justify-between bg-transparent select-none touch-none cursor-pointer active:cursor-grabbing hover:brightness-95 transition-all w-[92px] sm:w-[110px] flex-shrink-0 mr-[-4px] mb-1.5 ${
+                    className={`relative z-0 flex items-center justify-between bg-transparent select-none touch-none cursor-pointer active:cursor-grabbing hover:brightness-95 transition-all ${
+                      isMobile ? 'w-[74px] mr-[-4px] mb-1' : 'w-[92px] sm:w-[110px] mr-[-4px] mb-1.5'
+                    } flex-shrink-0 ${
                       isDragged ? 'opacity-50' : 'opacity-100'
                     } ${
                       isHoverTarget && !isDragged ? 'ring-2 ring-indigo-500 rounded-xl scale-105 z-10 shadow-lg' : ''
@@ -586,6 +588,7 @@ export default function CommandPanel({
                       activeInstructionId={activeInstructionId}
                       isDragged={isDragged}
                       isOutside={isOutside}
+                      isMobile={isMobile}
                     />
                   </div>
                 );
