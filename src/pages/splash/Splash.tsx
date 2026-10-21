@@ -19,7 +19,7 @@ interface SplashProps {
 
 export default function Splash({ onStart, isMuted, onToggleMute }: SplashProps) {
   return (
-    <div className="relative max-h-screen h-screen w-full flex flex-col items-center justify-center p-6 text-center overflow-hidden selection:bg-indigo-500/30 font-sans leading-relaxed bg-stone-900">
+    <div className="relative max-h-screen h-screen w-full flex flex-col items-center justify-center p-6 text-center overflow-hidden selection:bg-indigo-500/30 font-sans leading-relaxed bg-[#FEF8F0]">
       {/* Background Image with blur & opacity-60 */}
       <div 
         className="absolute inset-0 bg-cover bg-center pointer-events-none"

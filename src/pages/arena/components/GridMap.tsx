@@ -11,6 +11,7 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { Backpack, HelpCircle, Volume2, VolumeX, ArrowLeft, Info, X } from 'lucide-react';
 import { GridPos, TrashOnGrid, TrashCanOnGrid, ObstacleOnGrid, TrashItem, CharacterId, CommandAction, TrashType } from '../../../types';
+import { PRELOADED_IMAGES, GRID_IMAGE_SOURCES, SPRITE_SHEET_SPECS, SpriteSheetSpec } from '../../../utils/assetPreloader';
 
 import tongOrganik from '../../../../assets/Wadah Sampah Hijau.webp';
 import tongAnorganik from '../../../../assets/Wadah Sampah Kuning.webp';
@@ -20,16 +21,6 @@ import tongB3 from '../../../../assets/Wadah Sampah Merah.webp';
 import canOrganikHover from '../../../../assets/organic-hover.webp';
 import canAnorganikHover from '../../../../assets/anorganik-hover.webp';
 import canB3Hover from '../../../../assets/b3-hover.webp';
-
-// WebM assets for trash can buang (DROP) animation
-import canOrganikWebm from '../../../../assets/wadah_sampah_hijau.webm';
-import canAnorganikWebm from '../../../../assets/wadah_sampah_kuning.webm';
-import canB3Webm from '../../../../assets/wadah_sampah_merah.webm';
-
-import charOrganikWalk from '../../../../assets/char_organik_walk.webm';
-import charOrganikPick from '../../../../assets/char_organik_pick.webm';
-import charOrganikBuangWebm from '../../../../assets/char_organik_buang.webm';
-import charOrganikBuangMp4 from '../../../../assets/char_organik_buang.mp4';
 
 // Import trash item SVG assets
 import webpApel from '../../../../assets/apel.webp';
@@ -63,6 +54,9 @@ export interface CharacterRenderData {
   backpackCapacity: number;
   activeAction?: CommandAction | null;
   activeInstructionId?: string | null;
+  isDumping?: boolean;
+  dumpingCanType?: TrashType | null;
+  isPicking?: boolean;
 }
 
 export interface ElementSetting {
@@ -267,61 +261,76 @@ function drawImageContain(
   ctx.drawImage(img, cx - dw / 2, cy - dh / 2, dw, dh);
 }
 
-// Draw video with object-fit: contain (centered, aspect-ratio preserved) and chroma key green screen removal
-function drawVideoContain(
+// Draw a frame from a preloaded RGBA WebP sprite sheet with object-fit: contain (100% Safari & iOS compatible)
+function drawSpriteFrameContain(
   ctx: CanvasRenderingContext2D,
-  video: HTMLVideoElement,
+  sheetImg: HTMLImageElement | undefined,
+  spec: SpriteSheetSpec,
+  frameIdx: number,
   cx: number,
   cy: number,
   maxW: number,
-  maxH: number,
-  chromaCanvas: HTMLCanvasElement | null
-) {
-  const naturalW = video.videoWidth  || maxW;
-  const naturalH = video.videoHeight || maxH;
-  // Guard: skip if dimensions are invalid (video not ready)
-  if (naturalW <= 0 || naturalH <= 0) return;
-  const ratio = Math.min(maxW / naturalW, maxH / naturalH);
-  const dw = naturalW * ratio;
-  const dh = naturalH * ratio;
-
-  if (chromaCanvas) {
-    const cCtx = chromaCanvas.getContext('2d');
-    if (cCtx) {
-      // Set offscreen canvas size to match natural video size for high quality keying
-      if (chromaCanvas.width !== naturalW || chromaCanvas.height !== naturalH) {
-        chromaCanvas.width = naturalW;
-        chromaCanvas.height = naturalH;
-      }
-      
-      // Draw raw frame
-      cCtx.drawImage(video, 0, 0, naturalW, naturalH);
-      
-      // Perform chroma key pixel filter to remove blue background
-      const imgData = cCtx.getImageData(0, 0, naturalW, naturalH);
-      const data = imgData.data;
-      
-      for (let i = 0; i < data.length; i += 4) {
-        const r = data[i];
-        const g = data[i + 1];
-        const b = data[i + 2];
-        
-        // Blue chroma key filter: Blue must be dominant
-        if (b > 80 && b > r * 1.25 && b > g * 1.25) {
-          data[i + 3] = 0; // Set opacity to 0 (make transparent)
-        }
-      }
-      
-      cCtx.putImageData(imgData, 0, 0);
-      
-      // Draw key-filtered offscreen canvas frame onto main canvas
-      ctx.drawImage(chromaCanvas, cx - dw / 2, cy - dh / 2, dw, dh);
-      return;
-    }
+  maxH: number
+): boolean {
+  if (!sheetImg || !sheetImg.complete || !sheetImg.naturalWidth) {
+    return false;
   }
+  const clampedIdx = Math.max(0, Math.min(frameIdx, spec.totalFrames - 1));
+  const col = clampedIdx % spec.cols;
+  const row = Math.floor(clampedIdx / spec.cols);
+  const sx = col * spec.frameWidth;
+  const sy = row * spec.frameHeight;
 
-  // Fallback to raw drawing if offscreen canvas fails
-  ctx.drawImage(video, cx - dw / 2, cy - dh / 2, dw, dh);
+  const ratio = Math.min(maxW / spec.frameWidth, maxH / spec.frameHeight);
+  const dw = spec.frameWidth * ratio;
+  const dh = spec.frameHeight * ratio;
+
+  ctx.drawImage(
+    sheetImg,
+    sx,
+    sy,
+    spec.frameWidth,
+    spec.frameHeight,
+    cx - dw / 2,
+    cy - dh / 2,
+    dw,
+    dh
+  );
+  return true;
+}
+
+// Draw trash can dumping animation frame from preloaded RGBA WebP sprite sheet
+function drawTrashCanSpriteFrame(
+  ctx: CanvasRenderingContext2D,
+  sheetImg: HTMLImageElement | undefined,
+  spec: SpriteSheetSpec,
+  frameIdx: number,
+  vidX: number,
+  vidY: number,
+  vidW: number,
+  vidH: number
+): boolean {
+  if (!sheetImg || !sheetImg.complete || !sheetImg.naturalWidth) {
+    return false;
+  }
+  const clampedIdx = Math.max(0, Math.min(frameIdx, spec.totalFrames - 1));
+  const col = clampedIdx % spec.cols;
+  const row = Math.floor(clampedIdx / spec.cols);
+  const sx = col * spec.frameWidth;
+  const sy = row * spec.frameHeight;
+
+  ctx.drawImage(
+    sheetImg,
+    sx,
+    sy,
+    spec.frameWidth,
+    spec.frameHeight,
+    vidX,
+    vidY,
+    vidW,
+    vidH
+  );
+  return true;
 }
 
 export default function GridMap({
@@ -392,139 +401,40 @@ export default function GridMap({
     ...customOffsets,
   });
 
-  // Preload images
-  const [imagesLoaded, setImagesLoaded] = useState(false);
-  const imagesRef = useRef<Record<string, HTMLImageElement>>({});
+  // Preload images (initialized immediately from global preloader cache)
+  const [imagesLoaded, setImagesLoaded] = useState(() => Object.keys(PRELOADED_IMAGES).length > 0);
+  const imagesRef = useRef<Record<string, HTMLImageElement>>({ ...PRELOADED_IMAGES });
 
-  // WebM animation refs for the green robot
-  const walkVideoRef = useRef<HTMLVideoElement | null>(null);
-  const pickVideoRef = useRef<HTMLVideoElement | null>(null);
-  const dropVideoRef = useRef<HTMLVideoElement | null>(null);
-  const chromaCanvasRef = useRef<HTMLCanvasElement | null>(null);
-
-  // Video refs for trash can buang (DROP) animations
-  const canVideosRef = useRef<Record<string, HTMLVideoElement | null>>({
-    ORGANIC: null,
-    RECYCLABLE: null,
-    B3: null,
-  });
-
-  if (!chromaCanvasRef.current && typeof document !== 'undefined') {
-    chromaCanvasRef.current = document.createElement('canvas');
-  }
-
-  useEffect(() => {
-    const walkVid = document.createElement('video');
-    walkVid.src = charOrganikWalk;
-    walkVid.loop = true;
-    walkVid.muted = true;
-    walkVid.playsInline = true;
-    walkVid.setAttribute('webkit-playsinline', 'true');
-    walkVid.preload = 'auto';
-    // Seek to the first frame once data is ready so idle character is visible
-    walkVid.addEventListener('loadeddata', () => {
-      walkVid.currentTime = 0;
-    });
-    walkVid.load();
-    walkVideoRef.current = walkVid;
-
-    const pickVid = document.createElement('video');
-    pickVid.src = charOrganikPick;
-    pickVid.loop = false;
-    pickVid.muted = true;
-    pickVid.playsInline = true;
-    pickVid.setAttribute('webkit-playsinline', 'true');
-    pickVid.preload = 'auto';
-    pickVid.load();
-    pickVideoRef.current = pickVid;
-
-    const dropVid = document.createElement('video');
-    dropVid.loop = false;
-    dropVid.muted = true;
-    dropVid.playsInline = true;
-    dropVid.setAttribute('webkit-playsinline', 'true');
-    dropVid.preload = 'auto';
-
-    const sDropWebm = document.createElement('source');
-    sDropWebm.src = charOrganikBuangWebm;
-    sDropWebm.type = 'video/webm';
-    dropVid.appendChild(sDropWebm);
-
-    const sDropMp4 = document.createElement('source');
-    sDropMp4.src = charOrganikBuangMp4;
-    sDropMp4.type = 'video/mp4';
-    dropVid.appendChild(sDropMp4);
-
-    dropVid.load();
-    dropVideoRef.current = dropVid;
-
-    // Create trash can drop animation videos (WebM only)
-    const createCanVideo = (webmSrc: string) => {
-      const vid = document.createElement('video');
-      vid.loop = false;
-      vid.muted = true;
-      vid.playsInline = true;
-      vid.setAttribute('webkit-playsinline', 'true');
-      vid.preload = 'auto';
-
-      const sWebm = document.createElement('source');
-      sWebm.src = webmSrc;
-      sWebm.type = 'video/webm';
-      vid.appendChild(sWebm);
-
-      vid.load();
-      return vid;
-    };
-
-    const orgVid = createCanVideo(canOrganikWebm);
-    const recVid = createCanVideo(canAnorganikWebm);
-    const b3Vid = createCanVideo(canB3Webm);
-
-    canVideosRef.current = {
-      ORGANIC: orgVid,
-      RECYCLABLE: recVid,
-      B3: b3Vid,
-    };
-
-    return () => {
-      walkVid.pause();
-      pickVid.pause();
-      dropVid.pause();
-      orgVid.pause();
-      recVid.pause();
-      b3Vid.pause();
-    };
-  }, []);
+  // Sprite sheet animation timing refs (supports seamless Pause & Resume)
+  const lastFrameNowRef = useRef<number>(typeof performance !== 'undefined' ? performance.now() : 0);
+  const walkElapsedMsRef = useRef<number>(0);
+  const actionElapsedMsRef = useRef<number>(0);
+  const canElapsedMsRef = useRef<number>(0);
 
   // Track active instruction and dumping can across execution frames
   const lastActiveInstructionIdRef = useRef<string | null>(null);
   const lastActiveDumpingCanTypeRef = useRef<TrashType | null>(null);
 
-  // Reset all videos whenever execution stops or resets
+  // Pause animation timers when execution stops; only reset to frame 0 when not paused mid-run
   useEffect(() => {
     if (!isExecuting) {
-      if (walkVideoRef.current) {
-        walkVideoRef.current.pause();
-        walkVideoRef.current.currentTime = 0;
+      const isPausedMidRun = characters.some(c => c.activeInstructionId !== null);
+      if (!isPausedMidRun) {
+        walkElapsedMsRef.current = 0;
+        actionElapsedMsRef.current = 0;
+        canElapsedMsRef.current = 0;
+        lastActiveInstructionIdRef.current = null;
+        lastActiveDumpingCanTypeRef.current = null;
+        lastHorizontalDirsRef.current = {
+          ORGANIC: 'RIGHT',
+          RECYCLABLE: 'RIGHT',
+          B3: 'RIGHT',
+        };
       }
-      if (pickVideoRef.current) {
-        pickVideoRef.current.pause();
-        pickVideoRef.current.currentTime = 0;
-      }
-      if (dropVideoRef.current) {
-        dropVideoRef.current.pause();
-        dropVideoRef.current.currentTime = 0;
-      }
-      Object.values(canVideosRef.current).forEach(v => {
-        if (v) {
-          v.pause();
-          v.currentTime = 0;
-        }
-      });
-      lastActiveInstructionIdRef.current = null;
-      lastActiveDumpingCanTypeRef.current = null;
+    } else {
+      lastFrameNowRef.current = typeof performance !== 'undefined' ? performance.now() : 0;
     }
-  }, [isExecuting]);
+  }, [isExecuting, characters]);
 
   // Keep track of the last horizontal direction of each character to prevent vertical flipping
   const lastHorizontalDirsRef = useRef<Record<CharacterId, 'LEFT' | 'RIGHT'>>({
@@ -537,53 +447,29 @@ export default function GridMap({
   const containerSizeRef = useRef({ width: 0, height: 0 });
 
   useEffect(() => {
-    const sources: Record<string, string> = {
-      ORGANIC_can: tongOrganik,
-      RECYCLABLE_can: tongAnorganik,
-      B3_can: tongB3,
-      ORGANIC_can_hover: canOrganikHover,
-      RECYCLABLE_can_hover: canAnorganikHover,
-      B3_can_hover: canB3Hover,
-
-      // Trash items (keyed by the exact item.id used in levels.ts TRASH_ITEMS)
-      banana: svgKulitPisang,
-      sayur: svgSayur,
-      apple: webpApel,
-      can: webpKalengMinuman,
-      botolAir: svgBotolAir,
-      kertasKoran: svgKertasKoran,
-      battery: svgBaterai,
-      kalengBesi: svgKalengBesi,
-      bulb: svgLampu,
-      bgGrid: bgGrid,
-
-      // Rock & Wall grid assets
-      rock_1: rock1,
-      rock_2: rock2,
-      rock_3: rock3,
-      rock_4: rock4,
-      rock_5: rock5,
-      rock_6: rock6,
-      rock_7: rock7,
-      rock_8: rock8,
-      rock_9: rock9,
-    };
-
+    const entries = Object.entries(GRID_IMAGE_SOURCES);
     let loadedCount = 0;
-    const entries = Object.entries(sources);
-    
+
     entries.forEach(([key, src]) => {
+      if (PRELOADED_IMAGES[key]) {
+        imagesRef.current[key] = PRELOADED_IMAGES[key];
+        loadedCount++;
+        if (loadedCount === entries.length) {
+          setImagesLoaded(true);
+        }
+        return;
+      }
       const img = new Image();
       img.src = src;
       img.onload = () => {
         imagesRef.current[key] = img;
+        PRELOADED_IMAGES[key] = img;
         loadedCount++;
         if (loadedCount === entries.length) {
           setImagesLoaded(true);
         }
       };
       img.onerror = () => {
-        console.error('Failed to load image:', src);
         loadedCount++;
         if (loadedCount === entries.length) {
           setImagesLoaded(true);
@@ -800,69 +686,34 @@ export default function GridMap({
       ctx.restore();
     });
 
+    // Advance animation clocks based on frame delta time
+    const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
+    const dt = Math.min(100, Math.max(0, now - lastFrameNowRef.current));
+    lastFrameNowRef.current = now;
+
     // Check if active instruction or active dumping can changed
     const currentActiveInstructionId = characters.find(c => c.activeInstructionId)?.activeInstructionId || null;
     const isNewInstruction = isExecuting && currentActiveInstructionId !== lastActiveInstructionIdRef.current;
     if (isExecuting && isNewInstruction) {
       lastActiveInstructionIdRef.current = currentActiveInstructionId;
+      actionElapsedMsRef.current = 0;
+      canElapsedMsRef.current = 0;
+    }
+
+    if (isExecuting) {
+      const anyActing = characters.some(c => c.isPicking || c.isDumping);
+      if (anyActing) {
+        actionElapsedMsRef.current += dt;
+      } else {
+        walkElapsedMsRef.current += dt;
+      }
     }
 
     // 7. Draw Player Characters (drawn behind trash cans)
     try {
       characters.forEach(c => {
-        let renderX = c.pos.x;
-        let renderY = c.pos.y;
-
-        // Sync WebM animation states for character
-        const walkVideo = walkVideoRef.current;
-        const pickVideo = pickVideoRef.current;
-        const dropVideo = dropVideoRef.current;
-        const isPicking = isExecuting && c.activeAction === 'PICK';
-        const isDropping = isExecuting && c.activeAction === 'DROP';
-        const isActing = isPicking || isDropping;
-
-        if (walkVideo) {
-          if (isExecuting && !isActing) {
-            if (walkVideo.paused) {
-              walkVideo.play().catch(() => {});
-            }
-          } else {
-            if (!walkVideo.paused) {
-              walkVideo.pause();
-            }
-            if (!isExecuting) {
-              walkVideo.currentTime = 0;
-            }
-          }
-        }
-
-        if (pickVideo) {
-          if (isPicking) {
-            if (isNewInstruction) {
-              pickVideo.currentTime = 0;
-              pickVideo.play().catch(() => {});
-            }
-          } else {
-            if (!pickVideo.paused) {
-              pickVideo.pause();
-            }
-            pickVideo.currentTime = 0;
-          }
-        }
-
-        if (dropVideo) {
-          if (isDropping) {
-            if (isNewInstruction) {
-              dropVideo.currentTime = 0;
-              dropVideo.play().catch(() => {});
-            }
-          } else {
-            if (!dropVideo.paused) {
-              dropVideo.pause();
-            }
-            dropVideo.currentTime = 0;
-          }
-        }
+        const renderX = c.pos.x;
+        const renderY = c.pos.y;
 
         // Map grid coordinates to canvas pixel coordinates
         const cx = padX + renderX * cellSizeVal + cellSizeVal / 2;
@@ -875,32 +726,22 @@ export default function GridMap({
     }
 
     // 8. Draw Trash Cans (Placed side-by-side on floor, drawn in front of characters / higher z-index)
-    // Determine the SINGLE active trash can receiving the DROP action
-    // Only ONE trash can video may run at any time across the entire grid
+    // ONLY animate a trash can when the character is actively dumping valid trash into it (c.isDumping && c.dumpingCanType)
     let activeDumpingCanType: TrashType | null = null;
-    let minDumpingDistance = Infinity;
 
-    if (isExecuting) {
-      const droppingCharacters = characters.filter(c => c.activeAction === 'DROP');
-      if (droppingCharacters.length > 0) {
-        const activeChar = droppingCharacters[0];
-        trashCans.forEach(tc => {
-          const dx = Math.abs(tc.pos.x - activeChar.pos.x);
-          const dy = Math.abs(tc.pos.y - activeChar.pos.y);
-          const dist = Math.hypot(dx, dy);
-
-          // Maximum reach tolerance to prevent false triggers across neighboring bins (bins are spaced by 1.0 unit)
-          if (dx <= 0.65 && dy <= 1.0 && dist < minDumpingDistance) {
-            minDumpingDistance = dist;
-            activeDumpingCanType = tc.type;
-          }
-        });
-      }
+    const dumpingChar = characters.find(
+      c => c.isDumping && c.dumpingCanType && (isExecuting || c.activeInstructionId !== null)
+    );
+    if (dumpingChar && dumpingChar.dumpingCanType) {
+      activeDumpingCanType = dumpingChar.dumpingCanType;
     }
 
     const isCanTargetChanged = activeDumpingCanType !== lastActiveDumpingCanTypeRef.current;
     if (isCanTargetChanged) {
       lastActiveDumpingCanTypeRef.current = activeDumpingCanType;
+      canElapsedMsRef.current = 0;
+    } else if (isExecuting && activeDumpingCanType !== null) {
+      canElapsedMsRef.current += dt;
     }
 
     trashCans.forEach(tc => {
@@ -912,31 +753,31 @@ export default function GridMap({
       const canSize = cellSizeVal * sizeScale;
       const cy2 = cy + cellSizeVal * yOffset; 
 
-      // Strict single-can check: ONLY the single closest can to the dropping character plays
       const isDumping = tc.type === activeDumpingCanType;
-      const canVid = canVideosRef.current[tc.type];
+      const sheetKey = `can${tc.type}_sheet`;
+      const sheetSpec = SPRITE_SHEET_SPECS[sheetKey];
+      const sheetImg = imagesRef.current[sheetKey] || PRELOADED_IMAGES[sheetKey];
 
       ctx.save();
-      if (isDumping && canVid) {
-        if (isNewInstruction || isCanTargetChanged) {
-          canVid.currentTime = 0;
-          canVid.play().catch(() => {});
-        }
+      let drewSprite = false;
+      if (isDumping && sheetSpec && sheetImg) {
+        const frameIdx = Math.min(
+          sheetSpec.totalFrames - 1,
+          Math.floor((canElapsedMsRef.current / 1000) * sheetSpec.fps)
+        );
 
-        // Draw animated dumping video scaled and aligned to match the WebP asset exactly
+        // Draw animated dumping sprite scaled and aligned to match the WebP asset exactly
         const vidW = canSize * (320 / 359) * (181 / 163);
         const vidH = vidW * (295 / 181);
         const vidX = cx2 - vidW / 2;
         const vidY = (cy2 + canSize / 2) - (286 / 295) * vidH;
 
-        ctx.drawImage(canVid, vidX, vidY, vidW, vidH);
-      } else {
-        if (canVid && !canVid.paused) {
-          canVid.pause();
-          canVid.currentTime = 0;
-        }
+        drewSprite = drawTrashCanSpriteFrame(ctx, sheetImg, sheetSpec, frameIdx, vidX, vidY, vidW, vidH);
+      }
+
+      if (!drewSprite) {
         const canKey = `${tc.type}_can`;
-        const canImg = imagesRef.current[canKey];
+        const canImg = imagesRef.current[canKey] || PRELOADED_IMAGES[canKey];
         if (canImg) {
           drawImageContain(ctx, canImg, cx2, cy2, canSize, canSize);
         } else {
@@ -951,10 +792,11 @@ export default function GridMap({
 
   }, [width, height, characters, trashItems, trashCans, obstacles, isExecuting, zoom, offset, getCellSize, imagesLoaded, offsets]);
 
-  // Draw a single character using WebM video animation with chroma key
+  // Draw a single character using preloaded RGBA WebP sprite sheets (100% Safari & iOS compatible)
   const drawCharacter = (ctx: CanvasRenderingContext2D, cx: number, cy: number, cellSize: number, character: CharacterRenderData) => {
-    const isPicking = character.activeAction === 'PICK';
-    const isDropping = character.activeAction === 'DROP';
+    const isActiveOrPaused = isExecuting || character.activeInstructionId !== null;
+    const isPicking = isActiveOrPaused && Boolean(character.isPicking);
+    const isDropping = isActiveOrPaused && Boolean(character.isDumping);
 
     const charConfig = DEFAULT_ELEMENT_CONFIGS.characters[character.id] || {};
     const yOffset = charConfig.yOffset ?? DEFAULT_ELEMENT_CONFIGS.defaultCategory.character.yOffset;
@@ -966,36 +808,54 @@ export default function GridMap({
     const charH = cellSize * scaleH;
     const ry = cy + cellSize / 2 - charH / 2 + cellSize * yOffset;
 
-    // Select active video: drop video for DROP, pick video for PICK, walk video otherwise
-    let activeVideo = walkVideoRef.current;
+    let activeSpec = SPRITE_SHEET_SPECS.char_walk_sheet;
+    let activeFrameIdx = isActiveOrPaused
+      ? Math.floor((walkElapsedMsRef.current / 1000) * activeSpec.fps) % activeSpec.totalFrames
+      : 0;
     let activeCharW = charW;
     let activeCharH = charH;
     let activeRy = ry;
 
     if (isDropping) {
-      activeVideo = dropVideoRef.current || pickVideoRef.current;
+      const dropSpec = SPRITE_SHEET_SPECS.char_drop_sheet;
+      const dropFrame = Math.floor((actionElapsedMsRef.current / 1000) * dropSpec.fps);
+      if (dropFrame < dropSpec.totalFrames) {
+        activeSpec = dropSpec;
+        activeFrameIdx = dropFrame;
+      } else {
+        activeSpec = SPRITE_SHEET_SPECS.char_walk_sheet;
+        activeFrameIdx = 0;
+      }
     } else if (isPicking) {
-      activeVideo = pickVideoRef.current;
-      // Scale pick animation to match walk and buang state (~96%)
+      const pickSpec = SPRITE_SHEET_SPECS.char_pick_sheet;
+      const pickFrame = Math.min(
+        pickSpec.totalFrames - 1,
+        Math.floor((actionElapsedMsRef.current / 1000) * pickSpec.fps)
+      );
+      activeSpec = pickSpec;
+      activeFrameIdx = pickFrame;
       const pickScale = 0.96;
       activeCharW = charW * pickScale;
       activeCharH = charH * pickScale;
-      // Align feet to ground so character doesn't float
       activeRy = ry + (charH - activeCharH) / 2;
     }
 
-    if (activeVideo) {
-      ctx.save();
-      ctx.translate(rx, activeRy);
+    const activeSheetImg = imagesRef.current[activeSpec.key] || PRELOADED_IMAGES[activeSpec.key];
 
-      // Flip character horizontally if facing left
-      if (character.facingDir === 'LEFT') {
-        ctx.scale(-1, 1);
-      }
+    ctx.save();
+    ctx.translate(rx, activeRy);
 
-      drawVideoContain(ctx, activeVideo, 0, 0, activeCharW, activeCharH, chromaCanvasRef.current);
-      ctx.restore();
+    if (character.facingDir === 'LEFT') {
+      ctx.scale(-1, 1);
     }
+
+    const drawn = drawSpriteFrameContain(ctx, activeSheetImg, activeSpec, activeFrameIdx, 0, 0, activeCharW, activeCharH);
+    if (!drawn) {
+      const walkSpec = SPRITE_SHEET_SPECS.char_walk_sheet;
+      const walkImg = imagesRef.current[walkSpec.key] || PRELOADED_IMAGES[walkSpec.key];
+      drawSpriteFrameContain(ctx, walkImg, walkSpec, 0, 0, 0, charW, charH);
+    }
+    ctx.restore();
   };
 
   const drawRef = useRef(draw);

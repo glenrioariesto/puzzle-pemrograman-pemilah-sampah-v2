@@ -81,7 +81,7 @@ export default function Dashboard({
   });
 
   return (
-    <div className="h-screen w-full flex flex-col justify-center items-center relative overflow-hidden antialiased py-0 px-0 lg:py-6 lg:px-6 xl:py-8 xl:px-8 select-none bg-stone-900">
+    <div className="h-screen w-full flex flex-col justify-center items-center relative overflow-hidden antialiased py-0 px-0 lg:py-6 lg:px-6 xl:py-8 xl:px-8 select-none bg-[#FEF8F0]">
       {/* Background Image with blur & opacity-60 */}
       <div 
         className="absolute inset-0 bg-cover bg-center opacity-60 backdrop-blur-md pointer-events-none"

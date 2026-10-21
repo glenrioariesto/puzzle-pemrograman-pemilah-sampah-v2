@@ -20,12 +20,6 @@ import LevelSuccessModal from './components/modals/LevelSuccessModal';
 import LevelFailModal from './components/modals/LevelFailModal';
 import HintModal from './components/modals/HintModal';
 
-// Icons
-import { X } from 'lucide-react';
-
-import charOrganik from '@/assets/hijau-angkat.svg';
-import charAnorganik from '@/assets/kuning-angkat.svg';
-import charB3 from '@/assets/merah-angkat.svg';
 import bgArenaGame from '@/assets/bg-arena-game.webp';
 
 interface ArenaProps {
@@ -38,21 +32,8 @@ interface ArenaProps {
   onToggleMute: () => void;
 }
 
-const CHARACTER_COLORS: Record<CharacterId, { bg: string; border: string }> = {
-  ORGANIC: { bg: '#10B981', border: '#059669' },
-  RECYCLABLE: { bg: '#F59E0B', border: '#D97706' },
-  B3: { bg: '#EF4444', border: '#B91C1C' },
-};
-
-const CHARACTER_IMAGES: Record<CharacterId, string> = {
-  ORGANIC: charOrganik,
-  RECYCLABLE: charAnorganik,
-  B3: charB3,
-};
-
 export default function Arena({
   level,
-  highScores,
   onSaveHighScore,
   onBackToDashboard,
   onNextLevel,
@@ -66,7 +47,6 @@ export default function Arena({
     characterStates,
     isExecuting,
     activeTrash,
-    logs,
     gameResult,
     resultStars,
     totalSteps,
@@ -91,15 +71,8 @@ export default function Arena({
 
   const isMobile = useIsMobile();
 
-  const [activeHintSlide, setActiveHintSlide] = React.useState(0);
   const [toastMessage, setToastMessage] = React.useState<string | null>(null);
   const lastBlockCountRef = React.useRef(totalBlockCount);
-
-  React.useEffect(() => {
-    if (showHintsModal) {
-      setActiveHintSlide(0);
-    }
-  }, [showHintsModal]);
 
   React.useEffect(() => {
     const isOverLimit = level.maxInstructions ? totalBlockCount > level.maxInstructions : false;
@@ -126,6 +99,9 @@ export default function Arena({
       backpackCapacity: level.maxCapacity ?? level.trashItems.length,
       activeAction: activeStep?.action || null,
       activeInstructionId: state?.activeInstructionId || null,
+      isDumping: state?.isDumping || false,
+      dumpingCanType: state?.dumpingCanType || null,
+      isPicking: state?.isPicking || false,
     };
   });
 
@@ -178,7 +154,7 @@ export default function Arena({
   };
 
   return (
-    <div className="relative h-dvh overflow-hidden bg-stone-900 text-[#1C1917] flex flex-col selection:bg-indigo-500/30 font-sans leading-relaxed">
+    <div className="relative h-dvh overflow-hidden bg-[#FEF8F0] text-[#1C1917] flex flex-col selection:bg-indigo-500/30 font-sans leading-relaxed">
       {/* Background Image with blur & opacity-60 */}
       <div 
         className="absolute inset-0 bg-cover bg-center opacity-60 backdrop-blur-md pointer-events-none"
@@ -189,6 +165,15 @@ export default function Arena({
       {toastMessage && (
         <Toast message={toastMessage} onClose={() => setToastMessage(null)} />
       )}
+
+      {/* Floating Developer Auto-Solve Button */}
+      <button
+        onClick={handleDevAutoSolve}
+        className="fixed bottom-3 left-3 z-50 px-3 py-2 bg-indigo-650 hover:bg-indigo-600 border border-indigo-700 text-white text-[11px] font-bold rounded-xl shadow-md cursor-pointer transition-all flex items-center gap-1.5 active:scale-95 hover:scale-[1.02] opacity-40 hover:opacity-100"
+        title="Auto-fill correct steps for this level"
+      >
+        🛠️ Dev Auto-Solve
+      </button>
 
       {/* Main Core Layout Body */}
       <main className="flex-1 max-w-7xl w-full mx-auto p-1 sm:p-2 flex flex-col gap-1 sm:gap-2 min-h-0">
@@ -281,13 +266,5 @@ export default function Arena({
         playSound={playSound}
       />
     </div>
-  );
-}
-
-function StarIcon({ className }: { className: string }) {
-  return (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className={className}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499c.195-.572 1.045-.572 1.24 0l1.98 5.8 6.13.43c.613.043.86.82.387 1.218l-4.577 3.82 1.488 5.75c.149.576-.484 1.037-1.026.712L12 18.16l-5.02 2.87c-.542.325-1.175-.136-1.026-.712l1.488-5.75L2.865 10.95c-.473-.399-.226-1.175.387-1.218l6.13-.43 1.98-5.8z" />
-    </svg>
   );
 }

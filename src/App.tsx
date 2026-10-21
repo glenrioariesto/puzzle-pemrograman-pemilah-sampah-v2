@@ -14,10 +14,15 @@ import Arena from './pages/arena/Arena';
 import PortraitWarning from './components/PortraitWarning';
 
 import { playSfx, syncBgmState, initUserInteractionListener } from './utils/audio';
+import { preloadAllGameAssets } from './utils/assetPreloader';
 
 export default function App() {
   // Global screen state: 'splash' | 'dashboard' | 'arena'
   const [page, setPage] = useState<'splash' | 'dashboard' | 'arena'>('splash');
+
+  // Asset preloading state — ensures all images & videos finish downloading first on initial open
+  const [isAssetsLoaded, setIsAssetsLoaded] = useState(false);
+  const [loadProgress, setLoadProgress] = useState(0);
 
   // Fullscreen prompt modal
   const [showFullscreenPrompt, setShowFullscreenPrompt] = useState(false);
@@ -40,17 +45,21 @@ export default function App() {
   // Sound / Audio effects muted state
   const [isMuted, setIsMuted] = useState(false);
 
-  // Global showHowToPlay trigger state that can be activated from splash or arena
-  const [showHowToPlayOnArena, setShowHowToPlayOnArena] = useState(false);
-
-  // Initialize audio listener & preload on mount
+  // Initialize audio listener & preload all visual/video assets on mount
   useEffect(() => {
     initUserInteractionListener();
-  }, []);
-
-  // Auto-show the fullscreen prompt every time the page opens or refreshes
-  useEffect(() => {
-    setShowFullscreenPrompt(true);
+    let mounted = true;
+    preloadAllGameAssets((pct) => {
+      if (mounted) setLoadProgress(pct);
+    }).then(() => {
+      if (mounted) {
+        setIsAssetsLoaded(true);
+        setShowFullscreenPrompt(true);
+      }
+    });
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   // Sync mute state with background music
@@ -127,11 +136,37 @@ export default function App() {
     setPage('splash');
   };
 
+  // Initial Asset Preloader Screen — warm cream/green background (never black!)
+  if (!isAssetsLoaded) {
+    return (
+      <div className="h-screen w-screen overflow-hidden relative flex flex-col items-center justify-center bg-gradient-to-b from-[#E0F2FE] via-[#FEF8F0] to-[#DCFCE7] p-6 select-none">
+        <div className="max-w-sm w-full bg-[#FEF8F0] border-2 border-[#EED4B7] rounded-3xl p-6 sm:p-8 shadow-xl flex flex-col items-center text-center">
+          <div className="w-16 h-16 rounded-2xl bg-emerald-100 border border-emerald-300 flex items-center justify-center text-3xl mb-4 animate-bounce">
+            ♻️
+          </div>
+          <h2 className="text-base sm:text-lg font-extrabold text-amber-950 mb-1">
+            Memuat Aset Permainan...
+          </h2>
+          <p className="text-xs text-stone-600 mb-4 font-medium">
+            Menyiapkan gambar dan animasi ({loadProgress}%)
+          </p>
+          <div className="w-full h-3 bg-[#EED4B7]/50 rounded-full overflow-hidden border border-[#EED4B7]">
+            <div
+              className="h-full bg-gradient-to-r from-emerald-500 to-[#00ADEF] transition-all duration-200 rounded-full"
+              style={{ width: `${loadProgress}%` }}
+            />
+          </div>
+        </div>
+        <PortraitWarning />
+      </div>
+    );
+  }
+
   return (
-    <div className="h-screen w-screen overflow-hidden relative">
-      {/* Mode Layar Penuh Modal - Colors exactly matching Splash page (#00ADEF, #EED4B7, #FEF8F0) */}
+    <div className="h-screen w-screen overflow-hidden relative bg-[#FEF8F0]">
+      {/* Mode Layar Penuh Modal - Colors matching Splash page (#00ADEF, #EED4B7, #FEF8F0) */}
       {showFullscreenPrompt && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-stone-900/60 backdrop-blur-md p-4 select-none animate-fadeIn">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-amber-950/30 backdrop-blur-md p-4 select-none animate-fadeIn">
           <div className="relative max-w-sm w-full mx-auto bg-[#FEF8F0] border-2 border-[#EED4B7] shadow-2xl rounded-3xl p-6 sm:p-8 flex flex-col items-center text-center">
             <div className="relative flex items-center justify-center mb-6">
               <div className="absolute w-20 h-20 bg-[#00ADEF]/20 rounded-full animate-ping opacity-75" />

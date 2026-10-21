@@ -11,20 +11,23 @@ import {
   CharacterId,
   GridPos,
   TrashOnGrid,
-  Character
+  TrashType
 } from '../../../types';
 
 import { playSfx, SoundType } from '../../../utils/audio';
 
 // Per-character execution state
-interface CharacterState {
+export interface CharacterState {
   pos: GridPos;
   facingDir: 'UP' | 'DOWN' | 'LEFT' | 'RIGHT';
   instructions: Instruction[];
   compiledSteps: { instructionId: string; action: CommandAction }[];
   playbackIndex: number;
   activeInstructionId: string | null;
-  backpack: any[]; // using simplified representation
+  isDumping: boolean;
+  dumpingCanType: TrashType | null;
+  isPicking: boolean;
+  backpack: any[];
   trailPositions: GridPos[];
   finished: boolean;
   hasErrored: boolean;
@@ -38,16 +41,19 @@ export function useArenaGame(
   onSaveHighScore: (levelId: number, stars: number, minSteps: number) => void
 ) {
   // --- Initial Character States Helper ---
-  const createInitialCharacterStates = (): Record<CharacterId, CharacterState> => {
+  const createInitialCharacterStates = (preserveInstructions?: Record<CharacterId, Instruction[]>): Record<CharacterId, CharacterState> => {
     const states: Record<string, CharacterState> = {};
     for (const character of level.characters) {
       states[character.id] = {
         pos: { ...character.startPos },
         facingDir: 'RIGHT',
-        instructions: [],
+        instructions: preserveInstructions?.[character.id] ? [...preserveInstructions[character.id]] : [],
         compiledSteps: [],
         playbackIndex: 0,
         activeInstructionId: null,
+        isDumping: false,
+        dumpingCanType: null,
+        isPicking: false,
         backpack: [],
         trailPositions: [{ ...character.startPos }],
         finished: false,
@@ -58,11 +64,14 @@ export function useArenaGame(
   };
 
   const [activeCharacter, setActiveCharacter] = useState<CharacterId>('ORGANIC');
-  const [characterStates, setCharacterStates] = useState<Record<CharacterId, CharacterState>>(createInitialCharacterStates);
+  const [characterStates, setCharacterStates] = useState<Record<CharacterId, CharacterState>>(() => createInitialCharacterStates());
 
   // Simulation execution tracking states
   const [isExecuting, setIsExecuting] = useState(false);
   const [activeTrash, setActiveTrash] = useState<TrashOnGrid[]>([]);
+
+  // Track whether execution was paused via STOP button so MULAI can resume from current position
+  const isPausedRef = useRef<boolean>(false);
 
   // Logs for console terminal
   const [logs, setLogs] = useState<string[]>([]);
@@ -98,24 +107,52 @@ export function useArenaGame(
     frameTicks: number;
     playbackIndex: number;
     activeInstructionId: string | null;
+    isDumping: boolean;
+    dumpingCanType: TrashType | null;
+    isPicking: boolean;
     backpack: any[];
     finished: boolean;
     hasErrored: boolean;
   }>>({
-    ORGANIC: { x: 0, y: 3, vx: 0, vy: 0, isOnGround: true, frameTicks: 0, playbackIndex: 0, activeInstructionId: null, backpack: [], finished: false, hasErrored: false },
-    RECYCLABLE: { x: 0, y: 3, vx: 0, vy: 0, isOnGround: true, frameTicks: 0, playbackIndex: 0, activeInstructionId: null, backpack: [], finished: false, hasErrored: false },
-    B3: { x: 0, y: 3, vx: 0, vy: 0, isOnGround: true, frameTicks: 0, playbackIndex: 0, activeInstructionId: null, backpack: [], finished: false, hasErrored: false }
+    ORGANIC: { x: 0, y: 3, vx: 0, vy: 0, isOnGround: true, frameTicks: 0, playbackIndex: 0, activeInstructionId: null, isDumping: false, dumpingCanType: null, isPicking: false, backpack: [], finished: false, hasErrored: false },
+    RECYCLABLE: { x: 0, y: 3, vx: 0, vy: 0, isOnGround: true, frameTicks: 0, playbackIndex: 0, activeInstructionId: null, isDumping: false, dumpingCanType: null, isPicking: false, backpack: [], finished: false, hasErrored: false },
+    B3: { x: 0, y: 3, vx: 0, vy: 0, isOnGround: true, frameTicks: 0, playbackIndex: 0, activeInstructionId: null, isDumping: false, dumpingCanType: null, isPicking: false, backpack: [], finished: false, hasErrored: false }
   });
 
+  const resetPhysicsToStart = () => {
+    for (const character of level.characters) {
+      physicsStateRef.current[character.id] = {
+        x: character.startPos.x,
+        y: character.startPos.y,
+        vx: 0,
+        vy: 0,
+        isOnGround: true,
+        frameTicks: 0,
+        playbackIndex: 0,
+        activeInstructionId: null,
+        isDumping: false,
+        dumpingCanType: null,
+        isPicking: false,
+        backpack: [],
+        finished: false,
+        hasErrored: false
+      };
+    }
+  };
+
   // Initialize level upon load
-  const getCharacterLabel = (id: CharacterId) => {
+  const getCharacterLabel = (_id: CharacterId) => {
     return 'Petugas Sampah';
   };
 
   useEffect(() => {
+    if (intervalRef.current) clearInterval(intervalRef.current);
+    setIsExecuting(false);
+    isPausedRef.current = false;
     const initial = createInitialCharacterStates();
     setCharacterStates(initial);
     characterStatesRef.current = initial;
+    resetPhysicsToStart();
     const trash = level.trashItems.map(t => ({ ...t, collected: false }));
     setActiveTrash(trash);
     activeTrashRef.current = trash;
@@ -161,6 +198,7 @@ export function useArenaGame(
 
   const handleClearInstructions = () => {
     playSound('click');
+    isPausedRef.current = false;
     setCharacterStates(prev => ({
       ...prev,
       [activeCharacter]: { ...prev[activeCharacter], instructions: [] }
@@ -222,6 +260,8 @@ export function useArenaGame(
 
   // --- Execution Control ---
   const handleStartExecution = () => {
+    if (intervalRef.current) clearInterval(intervalRef.current);
+
     // Check if any character has a program
     const hasProgram = Object.values(characterStatesRef.current).some(c => c.instructions.length > 0);
     if (!hasProgram) {
@@ -231,6 +271,59 @@ export function useArenaGame(
     }
     playSound('click');
 
+    // Check if we can resume from a paused state (STOP -> MULAI continues directly)
+    const canResume = isPausedRef.current && level.characters.some(ch => {
+      const phys = physicsStateRef.current[ch.id];
+      const st = characterStatesRef.current[ch.id];
+      const totalInst = st?.instructions.length || 0;
+      return phys && !phys.hasErrored && (phys.playbackIndex < totalInst || phys.frameTicks > 0);
+    });
+
+    if (canResume) {
+      const resumedCharacters: Record<CharacterId, CharacterState> = {} as Record<CharacterId, CharacterState>;
+      for (const character of level.characters) {
+        const state = characterStatesRef.current[character.id] || characterStates[character.id];
+        const phys = physicsStateRef.current[character.id];
+        const compiled = compileInstructions(state?.instructions || []);
+
+        // If the currently active instruction was edited/replaced while paused, reset frameTicks for the current step
+        const currentStep = compiled[phys.playbackIndex];
+        if (!currentStep || currentStep.instructionId !== phys.activeInstructionId) {
+          phys.frameTicks = 0;
+          phys.vx = 0;
+          phys.vy = 0;
+          phys.isDumping = false;
+          phys.dumpingCanType = null;
+          phys.isPicking = false;
+          phys.activeInstructionId = currentStep ? currentStep.instructionId : null;
+        }
+        phys.finished = phys.playbackIndex >= compiled.length;
+        phys.hasErrored = false;
+
+        resumedCharacters[character.id] = {
+          ...state,
+          compiledSteps: compiled,
+          playbackIndex: phys.playbackIndex,
+          activeInstructionId: phys.activeInstructionId,
+          isDumping: phys.isDumping,
+          dumpingCanType: phys.dumpingCanType,
+          isPicking: phys.isPicking,
+          finished: phys.finished,
+          hasErrored: false,
+        };
+      }
+
+      isPausedRef.current = false;
+      setCharacterStates(resumedCharacters);
+      characterStatesRef.current = resumedCharacters;
+      setGameResult(null);
+      setShowResultModal(false);
+      setIsExecuting(true);
+      setLogs(prev => [...prev, `[Sistem] Melanjutkan eksekusi program...`]);
+      return;
+    }
+
+    // Fresh start from the beginning
     const newCharacters: Record<CharacterId, CharacterState> = {} as Record<CharacterId, CharacterState>;
     for (const character of level.characters) {
       const state = characterStatesRef.current[character.id] || characterStates[character.id];
@@ -241,33 +334,25 @@ export function useArenaGame(
         compiledSteps: compileInstructions(state?.instructions || []),
         playbackIndex: 0,
         activeInstructionId: null,
+        isDumping: false,
+        dumpingCanType: null,
+        isPicking: false,
         backpack: [],
         trailPositions: [{ ...character.startPos }],
         finished: false,
         hasErrored: false,
       };
-
-      // Initialize physics values
-      physicsStateRef.current[character.id] = {
-        x: character.startPos.x,
-        y: character.startPos.y,
-        vx: 0,
-        vy: 0,
-        isOnGround: true,
-        frameTicks: 0,
-        playbackIndex: 0,
-        activeInstructionId: null,
-        backpack: [],
-        finished: false,
-        hasErrored: false
-      };
     }
 
+    isPausedRef.current = false;
+    resetPhysicsToStart();
     setCharacterStates(newCharacters);
     characterStatesRef.current = newCharacters;
     const trash = level.trashItems.map(t => ({ ...t, collected: false }));
     setActiveTrash(trash);
     activeTrashRef.current = trash;
+    setGameResult(null);
+    setShowResultModal(false);
     setIsExecuting(true);
 
     const totalCmds = Object.values(newCharacters).reduce((s, c) => s + c.compiledSteps.length, 0);
@@ -279,48 +364,21 @@ export function useArenaGame(
 
   const handleStopExecution = () => {
     if (intervalRef.current) clearInterval(intervalRef.current);
-    playSound('fail');
+    playSound('click');
+    isPausedRef.current = true;
     setIsExecuting(false);
-    setLogs(prev => [...prev, `[Sistem] Eksekusi dihentikan oleh pengguna.`]);
+    setLogs(prev => [...prev, `[Sistem] Eksekusi dihentikan sementara. Klik Mulai untuk meneruskan.`]);
   };
 
   const handleReset = () => {
     if (intervalRef.current) clearInterval(intervalRef.current);
+    isPausedRef.current = false;
     setIsExecuting(false);
-    // Clear all user programs and reset positions/backpacks/trails
-    setCharacterStates(prev => {
-      const updated: Record<string, CharacterState> = {};
-      for (const character of level.characters) {
-        updated[character.id] = {
-          pos: { ...character.startPos },
-          facingDir: 'RIGHT',
-          instructions: [],
-          compiledSteps: [],
-          playbackIndex: 0,
-          activeInstructionId: null,
-          backpack: [],
-          trailPositions: [{ ...character.startPos }],
-          finished: false,
-          hasErrored: false,
-        };
 
-        // Reset physics variables
-        physicsStateRef.current[character.id] = {
-          x: character.startPos.x,
-          y: character.startPos.y,
-          vx: 0,
-          vy: 0,
-          isOnGround: true,
-          frameTicks: 0,
-          playbackIndex: 0,
-          activeInstructionId: null,
-          backpack: [],
-          finished: false,
-          hasErrored: false
-        };
-      }
-      return updated as Record<CharacterId, CharacterState>;
-    });
+    const resetChars = createInitialCharacterStates();
+    resetPhysicsToStart();
+    setCharacterStates(resetChars);
+    characterStatesRef.current = resetChars;
 
     const trash = level.trashItems.map(t => ({ ...t, collected: false }));
     setActiveTrash(trash);
@@ -331,23 +389,6 @@ export function useArenaGame(
       `[Sistem] Reset: Simulasi diatur ulang & program dikosongkan.`,
       `[Sistem] Susun program untuk menyusun langkah Petugas Sampah.`
     ]);
-  };
-
-  // --- Collision detection ---
-  const checkCollision = (
-    targetX: number, targetY: number,
-    characters: Record<CharacterId, CharacterState>,
-    currentCharacterId: CharacterId
-  ): 'OK' | 'WALL' | 'OBSTACLE' | 'CHARACTER' => {
-    if (targetX < 0 || targetX >= level.gridSize.width || targetY < 0 || targetY >= level.gridSize.height) {
-      return 'WALL';
-    }
-    const obstacle = level.obstacles.find(o => o.pos.x === targetX && o.pos.y === targetY);
-    if (obstacle) return 'OBSTACLE';
-    // Check if another character is already at target position (active, finished, or errored)
-    const otherCharacter = Object.entries(characters).find(([id, c]) => id !== currentCharacterId && c.pos.x === targetX && c.pos.y === targetY);
-    if (otherCharacter) return 'CHARACTER';
-    return 'OK';
   };
 
   // Clone character states for React state (avoids mutation issues)
@@ -431,9 +472,15 @@ export function useArenaGame(
           physics.finished = true;
           physics.vx = 0;
           physics.vy = 0;
+          physics.isDumping = false;
+          physics.dumpingCanType = null;
+          physics.isPicking = false;
           character.finished = true;
           character.playbackIndex = physics.playbackIndex;
           character.activeInstructionId = null;
+          character.isDumping = false;
+          character.dumpingCanType = null;
+          character.isPicking = false;
           currentCharacters[characterId] = character;
           continue;
         }
@@ -447,15 +494,17 @@ export function useArenaGame(
         const stepNum = physics.playbackIndex + 1;
 
         // Apply constant gravity
-        physics.vy += 0.012; // Gravity pull
+        physics.vy += 0.012;
 
         // Process instruction state machine
         physics.frameTicks++;
 
         if (step.action === 'RIGHT') {
+          physics.isDumping = false;
+          physics.dumpingCanType = null;
+          physics.isPicking = false;
           physics.vx = 0.0351;
           character.facingDir = 'RIGHT';
-          // At 50 FPS, 28.5 ticks (570ms) at 0.0351 speed moves exactly 1.0 grid cell
           if (physics.frameTicks >= 28.5) {
             physics.vx = 0;
             physics.frameTicks = 0;
@@ -463,6 +512,9 @@ export function useArenaGame(
             newLogs.push(`[Gerakan] ${characterLabel} langkah ${stepNum}: Melangkah ke kanan.`);
           }
         } else if (step.action === 'LEFT') {
+          physics.isDumping = false;
+          physics.dumpingCanType = null;
+          physics.isPicking = false;
           physics.vx = -0.0351;
           character.facingDir = 'LEFT';
           if (physics.frameTicks >= 28.5) {
@@ -471,34 +523,40 @@ export function useArenaGame(
             physics.playbackIndex++;
             newLogs.push(`[Gerakan] ${characterLabel} langkah ${stepNum}: Melangkah ke kiri.`);
           }
-        } else if (step.action === 'UP') { // Loncat / Jump forward in facing direction
-          // On start of jump, trigger vertical velocity
+        } else if (step.action === 'UP') {
+          physics.isDumping = false;
+          physics.dumpingCanType = null;
+          physics.isPicking = false;
           if (physics.frameTicks === 1) {
             if (physics.isOnGround) {
               playSound('jump');
-              physics.vy = -0.17; // Jump up force
+              physics.vy = -0.17;
               physics.isOnGround = false;
             }
           }
-          // Move forward 2 cells while jumping (2.0 / ~30 ticks = 0.066 speed)
           physics.vx = character.facingDir === 'RIGHT' ? 0.066 : -0.066;
 
-          // Jump finishes only when landing back on ground
           if (physics.frameTicks > 5 && physics.isOnGround) {
             physics.vx = 0;
             physics.frameTicks = 0;
             physics.playbackIndex++;
             newLogs.push(`[Gerakan] ${characterLabel} langkah ${stepNum}: Melompat dan mendarat.`);
           }
-        } else if (step.action === 'DOWN') { // Down/descend
-          physics.vy += 0.02; // fast fall
+        } else if (step.action === 'DOWN') {
+          physics.isDumping = false;
+          physics.dumpingCanType = null;
+          physics.isPicking = false;
+          physics.vy += 0.02;
           if (physics.frameTicks >= 10 || physics.isOnGround) {
             physics.frameTicks = 0;
             physics.playbackIndex++;
             newLogs.push(`[Gerakan] ${characterLabel} langkah ${stepNum}: Turun.`);
           }
         } else if (step.action === 'PICK') {
-          // Frame 1: Start WebM pick animation & check capacity error
+          physics.isDumping = false;
+          physics.dumpingCanType = null;
+
+          // Frame 1: Check if trash is present & capacity is available before playing PICK animation
           if (physics.frameTicks === 1) {
             const targetX = physics.x;
             const targetY = physics.y;
@@ -510,19 +568,23 @@ export function useArenaGame(
               const targetTrash = currentTrash[foundIdx];
               if (physics.backpack.length >= level.maxCapacity) {
                 playSound('fail');
+                physics.isPicking = false;
                 physics.hasErrored = true;
                 character.hasErrored = true;
                 hasError = true;
                 newLogs.push(`[Aksi] ${characterLabel} langkah ${stepNum}: Ingin mengambil ${targetTrash.item.name}.`);
                 newLogs.push(`[Kesalahan] ${characterLabel} gagal! Tas penuh! Kapasitas maksimal ${level.maxCapacity}.`);
+              } else {
+                physics.isPicking = true;
               }
             } else {
+              physics.isPicking = false;
               newLogs.push(`[Perhatian] ${characterLabel} langkah ${stepNum}: Tidak ada sampah di posisi ini!`);
             }
           }
 
           // Frame 35 (~0.7s): Mid-animation when character bends down & reaches trash
-          if (physics.frameTicks === 35 && !physics.hasErrored) {
+          if (physics.frameTicks === 35 && physics.isPicking && !physics.hasErrored) {
             const targetX = physics.x;
             const targetY = physics.y;
             const foundIdx = currentTrash.findIndex(
@@ -539,43 +601,57 @@ export function useArenaGame(
             }
           }
 
-          // PICK WebM animation delay (100 ticks @ 20ms = 2.0s) to allow complete 2-second animation visibility
-          if (physics.frameTicks >= 100 || physics.hasErrored) {
+          const pickDuration = physics.isPicking ? 100 : 15;
+          if (physics.frameTicks >= pickDuration || physics.hasErrored) {
+            physics.isPicking = false;
             physics.frameTicks = 0;
             physics.playbackIndex++;
           }
         } else if (step.action === 'DROP') {
-          // Frame 1: Start WebM drop animation & check container alignment
+          physics.isPicking = false;
+
+          // Frame 1: Must carry trash AND stand at matching trash can to trigger DROP animations
           if (physics.frameTicks === 1) {
             const targetX = physics.x;
             const targetY = physics.y;
             const foundCan = level.trashCans.find(
-              tc => Math.abs(tc.pos.x - targetX) <= 0.75 && Math.abs(tc.pos.y - targetY) <= 0.8
+              tc => Math.abs(tc.pos.x - targetX) <= 0.65 && Math.abs(tc.pos.y - targetY) <= 0.8
             );
 
             if (foundCan) {
               if (physics.backpack.length > 0) {
                 const lastPickedItem = physics.backpack[physics.backpack.length - 1];
-                if (lastPickedItem.type !== foundCan.type) {
+                if (lastPickedItem.type === foundCan.type) {
+                  // Valid dump: character has matching trash in backpack!
+                  physics.isDumping = true;
+                  physics.dumpingCanType = foundCan.type;
+                } else {
+                  physics.isDumping = false;
+                  physics.dumpingCanType = null;
                   playSound('fail');
                   newLogs.push(`[Aksi Gagal] ${characterLabel} langkah ${stepNum}: Sampah teratas di tas ("${lastPickedItem.name}" ${lastPickedItem.emoji}) tidak cocok dengan Tong ${foundCan.label} ${foundCan.emoji}! (Sampah yang terakhir diambil harus dibuang lebih dulu)`);
                 }
               } else {
+                // Empty backpack: do NOT trigger character or trash can dump animation!
+                physics.isDumping = false;
+                physics.dumpingCanType = null;
                 playSound('fail');
                 newLogs.push(`[Aksi Gagal] ${characterLabel} langkah ${stepNum}: Tas kosong, tidak ada sampah untuk dibuang!`);
               }
             } else {
+              physics.isDumping = false;
+              physics.dumpingCanType = null;
               playSound('click');
               newLogs.push(`[Perhatian] ${characterLabel} langkah ${stepNum}: Membuang sampah di tanah kosong!`);
             }
           }
 
           // Frame 35 (~0.7s): Mid-animation when character drops item into container
-          if (physics.frameTicks === 35 && !physics.hasErrored) {
+          if (physics.frameTicks === 35 && physics.isDumping && !physics.hasErrored) {
             const targetX = physics.x;
             const targetY = physics.y;
             const foundCan = level.trashCans.find(
-              tc => Math.abs(tc.pos.x - targetX) <= 0.75 && Math.abs(tc.pos.y - targetY) <= 0.8
+              tc => Math.abs(tc.pos.x - targetX) <= 0.65 && Math.abs(tc.pos.y - targetY) <= 0.8
             );
 
             if (foundCan && physics.backpack.length > 0) {
@@ -591,8 +667,11 @@ export function useArenaGame(
             }
           }
 
-          // DROP WebM animation delay (100 ticks @ 20ms = 2.0s) to allow complete 2-second animation visibility
-          if (physics.frameTicks >= 100 || physics.hasErrored) {
+          // Only wait full 100 ticks (2.0s) if actually dumping trash; otherwise finish quickly without buggy animation
+          const dropDuration = physics.isDumping ? 100 : 15;
+          if (physics.frameTicks >= dropDuration || physics.hasErrored) {
+            physics.isDumping = false;
+            physics.dumpingCanType = null;
             physics.frameTicks = 0;
             physics.playbackIndex++;
           }
@@ -616,22 +695,16 @@ export function useArenaGame(
         // Obstacles collision detection
         level.obstacles.forEach(obs => {
           const ox = obs.pos.x;
-          const oy = obs.pos.y; // bottom floor obstacle has y=3, so top of obstacle is y=2.2 (height is ~0.8)
-          const obstacleTopY = oy - 0.8; // top surface of obstacle
+          const oy = obs.pos.y;
+          const obstacleTopY = oy - 0.8;
 
-          // Check if character's feet land on top of the obstacle
-          // Horizontal range of obstacle: [ox - 0.45, ox + 0.45]
           const isHorizontalOverlap = physics.x >= ox - 0.45 && physics.x <= ox + 0.45;
           if (isHorizontalOverlap) {
-            // Landing detection: if character's feet are falling through the top of the obstacle
             if (physics.vy >= 0 && physics.y >= obstacleTopY && physics.y - physics.vy <= obstacleTopY + 0.15) {
               physics.y = obstacleTopY;
               physics.vy = 0;
               physics.isOnGround = true;
-            }
-            // Side collision: if feet are below the top of the obstacle, they run into the side!
-            else if (physics.y > obstacleTopY + 0.05) {
-              // Block walking into it
+            } else if (physics.y > obstacleTopY + 0.05) {
               if (physics.vx > 0 && physics.x > ox - 0.45) {
                 physics.x = ox - 0.45;
                 physics.vx = 0;
@@ -643,10 +716,13 @@ export function useArenaGame(
           }
         });
 
-        // Sync coordinates back to character state
+        // Sync coordinates & animation flags back to character state
         character.pos = { x: parseFloat(physics.x.toFixed(3)), y: parseFloat(physics.y.toFixed(3)) };
         character.playbackIndex = physics.playbackIndex;
-        
+        character.isDumping = physics.isDumping;
+        character.dumpingCanType = physics.dumpingCanType;
+        character.isPicking = physics.isPicking;
+
         // Add trail position if moved significantly
         const lastTrail = character.trailPositions[character.trailPositions.length - 1];
         if (!lastTrail || Math.abs(lastTrail.x - character.pos.x) > 0.3 || Math.abs(lastTrail.y - character.pos.y) > 0.3) {
@@ -668,6 +744,7 @@ export function useArenaGame(
 
       if (allFinished || hasError) {
         clearInterval(intervalRef.current!);
+        isPausedRef.current = false;
         setIsExecuting(false);
 
         if (hasError) {

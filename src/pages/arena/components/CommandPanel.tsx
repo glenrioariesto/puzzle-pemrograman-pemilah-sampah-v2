@@ -97,8 +97,9 @@ export default function CommandPanel({
   const blockCount = totalBlockCount;
   const isOverBlockLimit = level.maxInstructions ? blockCount > level.maxInstructions : false;
 
-  // --- Drag and Drop Pointer System ---
+  // --- Drag and Drop Pointer System + Click Tooltip ---
   const containerRef = useRef<HTMLDivElement>(null);
+  const tooltipRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
   itemRefs.current = []; // Reset on render
 
@@ -106,15 +107,48 @@ export default function CommandPanel({
   const dragIdxRef      = useRef<number | null>(null);
   const hoverIdxRef     = useRef<number | null>(null);
   const isOutsideRef    = useRef(false);
+  const hasMovedRef     = useRef(false);
   const dragStartX      = useRef(0);
   const dragStartY      = useRef(0);
   const dragScrollStart = useRef(0);
   const snapRects       = useRef<{ top: number; left: number; width: number; height: number }[]>([]);
 
-  // React state
+  // React state for drag
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [hoverIndex,   setHoverIndex]   = useState<number | null>(null);
   const [isOutside,    setIsOutside]    = useState(false);
+
+  // React state for clicked block tooltip (Hapus / Ganti Langkah)
+  const [selectedBlock, setSelectedBlock] = useState<{
+    id: string;
+    index: number;
+    rect: { top: number; bottom: number; left: number; width: number };
+  } | null>(null);
+
+  // Close tooltip when execution starts or instructions change length
+  useEffect(() => {
+    if (isExecuting) {
+      setSelectedBlock(null);
+    }
+  }, [isExecuting]);
+
+  // Close tooltip when clicking outside
+  useEffect(() => {
+    if (!selectedBlock) return;
+    const handleOutsidePointerDown = (e: PointerEvent) => {
+      const target = e.target as Node | null;
+      if (tooltipRef.current && target && tooltipRef.current.contains(target)) {
+        return;
+      }
+      const clickedEl = itemRefs.current[selectedBlock.index];
+      if (clickedEl && target && clickedEl.contains(target)) {
+        return;
+      }
+      setSelectedBlock(null);
+    };
+    window.addEventListener('pointerdown', handleOutsidePointerDown, true);
+    return () => window.removeEventListener('pointerdown', handleOutsidePointerDown, true);
+  }, [selectedBlock]);
 
   const applyDragXY = (idx: number, x: number, y: number) => {
     const el = itemRefs.current[idx];
@@ -139,6 +173,7 @@ export default function CommandPanel({
     dragIdxRef.current   = null;
     hoverIdxRef.current  = null;
     isOutsideRef.current = false;
+    hasMovedRef.current  = false;
     setDraggedIndex(null);
     setHoverIndex(null);
     setIsOutside(false);
@@ -152,7 +187,7 @@ export default function CommandPanel({
     return { transition: 'transform 150ms ease' };
   };
 
-  // Window pointer event handlers defined for robust, un-cancellable dragging
+  // Window pointer event handlers defined for robust, un-cancellable dragging + click detection
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>, index: number) => {
     if (isExecuting || e.button !== 0) return;
 
@@ -175,11 +210,7 @@ export default function CommandPanel({
     dragStartY.current      = e.clientY;
     dragScrollStart.current = containerRef.current?.scrollTop ?? 0;
     isOutsideRef.current    = false;
-
-    applyDragXY(index, 0, 0);
-    setDraggedIndex(index);
-    setHoverIndex(index);
-    setIsOutside(false);
+    hasMovedRef.current     = false;
 
     window.addEventListener('pointermove', onWindowPointerMove);
     window.addEventListener('pointerup', onWindowPointerUp);
@@ -193,6 +224,17 @@ export default function CommandPanel({
     const scrollDiff = (containerRef.current?.scrollTop ?? 0) - dragScrollStart.current;
     const deltaX = e.clientX - dragStartX.current;
     const deltaY = e.clientY - dragStartY.current;
+
+    if (!hasMovedRef.current) {
+      if (Math.hypot(deltaX, deltaY) <= 6) {
+        return;
+      }
+      hasMovedRef.current = true;
+      setSelectedBlock(null);
+      setDraggedIndex(dragIdx);
+      setHoverIndex(dragIdx);
+      setIsOutside(false);
+    }
 
     applyDragXY(dragIdx, deltaX, deltaY + scrollDiff);
 
@@ -242,8 +284,9 @@ export default function CommandPanel({
     const dragIdx = dragIdxRef.current;
     if (dragIdx === null) return;
 
-    const hover   = hoverIdxRef.current ?? dragIdx;
-    const outside = isOutsideRef.current;
+    const hover    = hoverIdxRef.current ?? dragIdx;
+    const outside  = isOutsideRef.current;
+    const hasMoved = hasMovedRef.current;
 
     window.removeEventListener('pointermove', onWindowPointerMove);
     window.removeEventListener('pointerup', onWindowPointerUp);
@@ -252,9 +295,25 @@ export default function CommandPanel({
     dragIdxRef.current = null;
     clearDragEl(dragIdx);
 
-    if (outside) {
-      const targetId = instructions[dragIdx].id;
-      onDeleteCommand(targetId);
+    if (!hasMoved) {
+      // Clicked/tapped without dragging -> toggle tooltip for Hapus / Ganti Langkah
+      const inst = instructions[dragIdx];
+      const el = itemRefs.current[dragIdx];
+      if (inst && el) {
+        const r = el.getBoundingClientRect();
+        setSelectedBlock((prev) =>
+          prev && prev.id === inst.id
+            ? null
+            : {
+                id: inst.id,
+                index: dragIdx,
+                rect: { top: r.top, bottom: r.bottom, left: r.left, width: r.width },
+              }
+        );
+      }
+    } else if (outside) {
+      const targetId = instructions[dragIdx]?.id;
+      if (targetId) onDeleteCommand(targetId);
     } else if (hover !== dragIdx) {
       const updated = [...instructions];
       const [item] = updated.splice(dragIdx, 1);
@@ -264,6 +323,7 @@ export default function CommandPanel({
 
     hoverIdxRef.current  = null;
     isOutsideRef.current = false;
+    hasMovedRef.current  = false;
     setDraggedIndex(null);
     setHoverIndex(null);
     setIsOutside(false);
@@ -286,8 +346,26 @@ export default function CommandPanel({
   }, []);
 
   const handleResetAll = () => {
+    setSelectedBlock(null);
     onReset?.();
     onClearInstructions();
+  };
+
+  const handleReplaceBlockAction = (newAction: CommandAction) => {
+    if (!selectedBlock) return;
+    const updated = instructions.map((inst, idx) =>
+      idx === selectedBlock.index || inst.id === selectedBlock.id
+        ? { ...inst, type: newAction }
+        : inst
+    );
+    onUpdateInstructions(updated);
+    setSelectedBlock(null);
+  };
+
+  const handleDeleteSelectedBlock = () => {
+    if (!selectedBlock) return;
+    onDeleteCommand(selectedBlock.id);
+    setSelectedBlock(null);
   };
 
   // Toolbox item definitions
@@ -301,6 +379,36 @@ export default function CommandPanel({
     { action: 'PICK', image: imgAmbil, title: 'Ambil' },
     { action: 'DROP', image: imgBuang, title: 'Buang' },
   ];
+  const allActionOptions: ToolboxItem[] = [...movementItems, ...actionItems];
+
+  // Calculate fixed tooltip position so it never clips inside scroll container
+  const activeSelectedInst = selectedBlock
+    ? instructions.find((i) => i.id === selectedBlock.id) || instructions[selectedBlock.index]
+    : null;
+
+  const getTooltipPositionStyle = (): { style: React.CSSProperties; placeBelow: boolean } => {
+    if (!selectedBlock || typeof window === 'undefined') {
+      return { style: {}, placeBelow: false };
+    }
+    const tooltipW = isMobile ? 228 : 256;
+    const centerX = selectedBlock.rect.left + selectedBlock.rect.width / 2;
+    const clampedLeft = Math.max(8, Math.min(window.innerWidth - tooltipW - 8, centerX - tooltipW / 2));
+    const placeBelow = selectedBlock.rect.top < 145;
+
+    return {
+      placeBelow,
+      style: {
+        position: 'fixed',
+        left: `${clampedLeft}px`,
+        top: placeBelow ? `${selectedBlock.rect.bottom + 8}px` : `${selectedBlock.rect.top - 8}px`,
+        transform: placeBelow ? 'translateY(0)' : 'translateY(-100%)',
+        width: `${tooltipW}px`,
+        zIndex: 120,
+      },
+    };
+  };
+
+  const tooltipPlacement = getTooltipPositionStyle();
 
   return (
     <div className={`bg-[#FCDCB5]/70 border border-[#E9BE91] ${isMobile ? "rounded-xl p-1 space-y-0.5" : "rounded-2xl sm:rounded-3xl p-3 space-y-1.5 md:space-y-3"} shadow-xl flex flex-col h-full overflow-hidden`} id="command-panel-card">
@@ -433,6 +541,9 @@ export default function CommandPanel({
 
           <div 
             ref={containerRef}
+            onScroll={() => {
+              if (selectedBlock) setSelectedBlock(null);
+            }}
             className={`flex-1 overflow-y-auto flex flex-wrap gap-y-1 md:gap-y-2 items-start content-start p-1.5 pr-0.5 sm:pr-1 custom-scrollbar min-h-0 mt-0.5 sm:mt-2 transition-all duration-200 ${
               draggedIndex !== null && isOutside
                 ? 'bg-rose-50/50 border border-dashed border-rose-350 rounded-2xl scale-[0.99] shadow-inner' 
@@ -451,6 +562,7 @@ export default function CommandPanel({
               instructions.map((inst, index) => {
                 const isDragged = draggedIndex === index;
                 const isHoverTarget = hoverIndex === index;
+                const isSelectedForTooltip = selectedBlock?.id === inst.id;
                 return (
                   <div
                     key={inst.id}
@@ -460,10 +572,12 @@ export default function CommandPanel({
                     }}
                     onPointerDown={(e) => handlePointerDown(e, index)}
                     onDragStart={(e) => e.preventDefault()}
-                    className={`relative z-0 flex items-center justify-between bg-transparent select-none touch-none cursor-grab active:cursor-grabbing hover:brightness-95 transition-all w-[92px] sm:w-[110px] flex-shrink-0 mr-[-4px] mb-1.5 ${
+                    className={`relative z-0 flex items-center justify-between bg-transparent select-none touch-none cursor-pointer active:cursor-grabbing hover:brightness-95 transition-all w-[92px] sm:w-[110px] flex-shrink-0 mr-[-4px] mb-1.5 ${
                       isDragged ? 'opacity-50' : 'opacity-100'
                     } ${
                       isHoverTarget && !isDragged ? 'ring-2 ring-indigo-500 rounded-xl scale-105 z-10 shadow-lg' : ''
+                    } ${
+                      isSelectedForTooltip ? 'ring-2 ring-amber-500 rounded-xl scale-105 z-20 shadow-md' : ''
                     }`}
                     style={getDragItemStyle(index)}
                   >
@@ -478,6 +592,70 @@ export default function CommandPanel({
               })
             )}
           </div>
+
+          {/* Floating Tooltip on Block Click: Ganti Langkah atau Hapus */}
+          {selectedBlock && activeSelectedInst && !isExecuting && (
+            <div
+              ref={tooltipRef}
+              style={tooltipPlacement.style}
+              className="bg-white/98 backdrop-blur-md border-2 border-amber-400 rounded-2xl p-2 sm:p-2.5 shadow-2xl flex flex-col gap-1.5 select-none animate-fade-in"
+              id="instruction-block-tooltip"
+            >
+              <div className="flex items-center justify-between border-b border-amber-200/80 pb-1">
+                <span className="text-[10px] sm:text-xs font-extrabold text-amber-950 font-heading">
+                  Langkah #{selectedBlock.index + 1} — Pilih Aksi
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setSelectedBlock(null)}
+                  className="w-4 h-4 rounded-full bg-stone-100 hover:bg-stone-200 text-stone-500 hover:text-stone-800 flex items-center justify-center text-[10px] font-bold cursor-pointer"
+                  title="Tutup"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <span className="text-[9px] sm:text-[10px] font-bold text-stone-600 uppercase tracking-wider">
+                  Ganti Langkah:
+                </span>
+                <div className="grid grid-cols-5 gap-1">
+                  {allActionOptions.map((opt) => {
+                    const isCurrent = activeSelectedInst.type === opt.action;
+                    return (
+                      <button
+                        key={opt.action}
+                        type="button"
+                        onClick={() => handleReplaceBlockAction(opt.action)}
+                        className={`flex flex-col items-center justify-center p-1 rounded-lg border transition-all cursor-pointer active:scale-95 ${
+                          isCurrent
+                            ? 'bg-amber-100 border-amber-500 ring-1 ring-amber-500 shadow-xs'
+                            : 'bg-stone-50 hover:bg-amber-50/70 border-stone-200'
+                        }`}
+                        title={`Ganti ke ${opt.title}`}
+                        id={`tooltip-replace-${opt.action}`}
+                      >
+                        <img src={opt.image} alt={opt.title} className="w-full h-6 sm:h-7 object-contain pointer-events-none" />
+                        <span className="text-[8px] sm:text-[9px] font-bold text-stone-700 mt-0.5 leading-none">
+                          {opt.title}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleDeleteSelectedBlock}
+                className="w-full mt-0.5 py-1.5 px-2.5 rounded-xl bg-rose-500 hover:bg-rose-600 active:scale-95 text-white font-extrabold text-[10px] sm:text-xs flex items-center justify-center gap-1.5 shadow-sm transition-all cursor-pointer"
+                id="tooltip-delete-step-btn"
+              >
+                <span>🗑️</span>
+                <span>Hapus Langkah Ini</span>
+              </button>
+            </div>
+          )}
 
           {/* Drag out to delete overlay badge */}
           {draggedIndex !== null && isOutside && (
