@@ -166,10 +166,10 @@ export default function Arena({
         <Toast message={toastMessage} onClose={() => setToastMessage(null)} />
       )}
 
-      {/* Floating Developer Auto-Solve Button */}
+      {/* Floating Developer Auto-Solve Button (Hidden) */}
       <button
         onClick={handleDevAutoSolve}
-        className="fixed bottom-3 left-3 z-50 px-3 py-2 bg-indigo-650 hover:bg-indigo-600 border border-indigo-700 text-white text-[11px] font-bold rounded-xl shadow-md cursor-pointer transition-all flex items-center gap-1.5 active:scale-95 hover:scale-[1.02] opacity-40 hover:opacity-100"
+        className="hidden fixed bottom-3 left-3 z-50 px-3 py-2 bg-indigo-650 hover:bg-indigo-600 border border-indigo-700 text-white text-[11px] font-bold rounded-xl shadow-md cursor-pointer transition-all items-center gap-1.5 active:scale-95 hover:scale-[1.02] opacity-40 hover:opacity-100"
         title="Auto-fill correct steps for this level"
       >
         🛠️ Dev Auto-Solve
